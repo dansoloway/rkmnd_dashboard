@@ -1,0 +1,62 @@
+# Laravel
+*.log
+.env
+.env.backup
+.env.production
+.phpactor.json
+.phpunit.result.cache
+/bootstrap/cache/*
+!/bootstrap/cache/.gitkeep
+/public/hot
+/public/storage
+/storage/*.key
+/storage/pail
+/vendor
+Homestead.json
+Homestead.yaml
+auth.json
+
+# IDE
+/.fleet
+/.idea
+/.nova
+/.phpunit.cache
+/.vscode
+/.zed
+.DS_Store
+Thumbs.db
+
+# NPM (not used, but keep for future)
+/node_modules
+/public/build
+package-lock.json
+npm-debug.log
+yarn-error.log
+
+# Database
+*.sqlite
+*.sqlite-journal
+/database/database.sqlite
+
+# Logs
+*.log
+storage/logs/*
+
+# Cache
+/bootstrap/cache/*.php
+/storage/framework/cache/*
+/storage/framework/sessions/*
+/storage/framework/views/*
+
+# Build artifacts
+/public/mix-manifest.json
+
+# Deployment
+/.deployment
+/deploy.sh
+
+# Temporary files
+*~
+*.swp
+*.swo
+.DS_Store
