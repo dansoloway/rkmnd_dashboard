@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # TuneUp Fitness AI Portal - Deployment Script
-# Target: ai.fitform100.net
+# Target: rkmnd.fitform100.net
 # Date: October 14, 2025
 
 echo "🚀 TuneUp Fitness AI Portal - Production Deployment"
@@ -15,8 +15,8 @@ RED='\033[0;31m'
 NC='\033[0m' # No Color
 
 # Configuration
-APP_DIR="/var/www/html/ai.fitform100.net"
-DOMAIN="ai.fitform100.net"
+APP_DIR="/var/www/html/rkmnd.fitform100.net"
+DOMAIN="rkmnd.fitform100.net"
 
 echo "📂 Target Directory: $APP_DIR"
 echo "🌐 Domain: $DOMAIN"

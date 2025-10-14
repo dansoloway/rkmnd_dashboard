@@ -1,4 +1,4 @@
-# ⚡ Quick Deployment Guide - ai.fitform100.net
+# ⚡ Quick Deployment Guide - rkmnd.fitform100.net
 
 **5-Minute Setup Summary** (Full guide: DEPLOYMENT_GUIDE.md)
 
@@ -32,8 +32,8 @@ cd /var/www/html
 
 ### 3. Clone Repository
 ```bash
-git clone https://github.com/dansoloway/rkmnd_dashboard.git ai.fitform100.net
-cd ai.fitform100.net
+git clone https://github.com/dansoloway/rkmnd_dashboard.git rkmnd.fitform100.net
+cd rkmnd.fitform100.net
 ```
 
 ### 4. Install & Configure
@@ -69,15 +69,15 @@ php artisan migrate --force
 **Apache:**
 ```bash
 # Create config
-sudo nano /etc/apache2/sites-available/ai.fitform100.net.conf
+sudo nano /etc/apache2/sites-available/rkmnd.fitform100.net.conf
 ```
 
 Paste:
 ```apache
 <VirtualHost *:80>
-    ServerName ai.fitform100.net
-    DocumentRoot /var/www/html/ai.fitform100.net/public
-    <Directory /var/www/html/ai.fitform100.net/public>
+    ServerName rkmnd.fitform100.net
+    DocumentRoot /var/www/html/rkmnd.fitform100.net/public
+    <Directory /var/www/html/rkmnd.fitform100.net/public>
         AllowOverride All
     </Directory>
 </VirtualHost>
@@ -85,14 +85,14 @@ Paste:
 
 Enable:
 ```bash
-sudo a2ensite ai.fitform100.net.conf
+sudo a2ensite rkmnd.fitform100.net.conf
 sudo a2enmod rewrite
 sudo systemctl reload apache2
 ```
 
 ### 7. SSL Certificate
 ```bash
-sudo certbot --apache -d ai.fitform100.net
+sudo certbot --apache -d rkmnd.fitform100.net
 # Choose: Redirect HTTP to HTTPS
 ```
 
@@ -104,7 +104,7 @@ php artisan view:cache
 ```
 
 ### 9. Test
-Visit: **https://ai.fitform100.net**
+Visit: **https://rkmnd.fitform100.net**
 
 ---
 
@@ -112,7 +112,7 @@ Visit: **https://ai.fitform100.net**
 
 Use the automated script:
 ```bash
-cd /var/www/html/ai.fitform100.net
+cd /var/www/html/rkmnd.fitform100.net
 ./deploy.sh
 ```
 
@@ -159,6 +159,6 @@ php artisan tinker
 
 ---
 
-**Target**: https://ai.fitform100.net  
+**Target**: https://rkmnd.fitform100.net  
 **Status**: Ready to Deploy! 🚀
 

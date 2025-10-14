@@ -1,6 +1,6 @@
-# 🚀 Deployment Guide - ai.fitform100.net
+# 🚀 Deployment Guide - rkmnd.fitform100.net
 
-**Target Domain**: `ai.fitform100.net`  
+**Target Domain**: `rkmnd.fitform100.net`  
 **Parent Domain**: `fitform100.net`  
 **Framework**: Laravel 12  
 **Date**: October 14, 2025
@@ -27,7 +27,7 @@ In your DNS settings for `fitform100.net`:
 
 ```
 Type: A
-Name: ai
+Name: rkmnd
 Value: [Your Server IP Address]
 TTL: 300 (or Auto)
 ```
@@ -35,7 +35,7 @@ TTL: 300 (or Auto)
 **Or CNAME if pointing to existing domain:**
 ```
 Type: CNAME
-Name: ai
+Name: rkmnd
 Value: fitform100.net
 TTL: 300
 ```
@@ -44,8 +44,8 @@ TTL: 300
 
 **Test DNS:**
 ```bash
-ping ai.fitform100.net
-nslookup ai.fitform100.net
+ping rkmnd.fitform100.net
+nslookup rkmnd.fitform100.net
 ```
 
 ---
@@ -61,15 +61,15 @@ ssh user@fitform100.net
 cd /var/www/html
 
 # Clone the repository
-git clone https://github.com/dansoloway/rkmnd_dashboard.git ai.fitform100.net
+git clone https://github.com/dansoloway/rkmnd_dashboard.git rkmnd.fitform100.net
 
 # Enter directory
-cd ai.fitform100.net
+cd rkmnd.fitform100.net
 ```
 
 ### Option B: Upload via FTP/SFTP
 1. Connect to your server via FTP/SFTP
-2. Upload all files to `/var/www/html/ai.fitform100.net/`
+2. Upload all files to `/var/www/html/rkmnd.fitform100.net/`
 3. Ensure proper permissions
 
 ---
@@ -78,7 +78,7 @@ cd ai.fitform100.net
 
 ### Install Dependencies
 ```bash
-cd /var/www/html/ai.fitform100.net
+cd /var/www/html/rkmnd.fitform100.net
 
 # Install Composer dependencies (production)
 composer install --optimize-autoloader --no-dev
@@ -101,7 +101,7 @@ APP_NAME="TuneUp Fitness AI Portal"
 APP_ENV=production
 APP_KEY=base64:YOUR_KEY_HERE
 APP_DEBUG=false
-APP_URL=https://ai.fitform100.net
+APP_URL=https://rkmnd.fitform100.net
 
 # Database
 DB_CONNECTION=mysql
@@ -134,17 +134,17 @@ php artisan key:generate
 ### Set Permissions
 ```bash
 # Set ownership (adjust user/group as needed)
-sudo chown -R www-data:www-data /var/www/html/ai.fitform100.net
+sudo chown -R www-data:www-data /var/www/html/rkmnd.fitform100.net
 
 # Set directory permissions
-sudo find /var/www/html/ai.fitform100.net -type d -exec chmod 755 {} \;
+sudo find /var/www/html/rkmnd.fitform100.net -type d -exec chmod 755 {} \;
 
 # Set file permissions
-sudo find /var/www/html/ai.fitform100.net -type f -exec chmod 644 {} \;
+sudo find /var/www/html/rkmnd.fitform100.net -type f -exec chmod 644 {} \;
 
 # Storage and cache need write access
-sudo chmod -R 775 /var/www/html/ai.fitform100.net/storage
-sudo chmod -R 775 /var/www/html/ai.fitform100.net/bootstrap/cache
+sudo chmod -R 775 /var/www/html/rkmnd.fitform100.net/storage
+sudo chmod -R 775 /var/www/html/rkmnd.fitform100.net/bootstrap/cache
 ```
 
 ---
@@ -168,7 +168,7 @@ EXIT;
 
 ### Run Migrations
 ```bash
-cd /var/www/html/ai.fitform100.net
+cd /var/www/html/rkmnd.fitform100.net
 
 # Run migrations
 php artisan migrate --force
@@ -183,29 +183,29 @@ php artisan migrate --force
 
 ### Option A: Apache Virtual Host
 
-Create file: `/etc/apache2/sites-available/ai.fitform100.net.conf`
+Create file: `/etc/apache2/sites-available/rkmnd.fitform100.net.conf`
 
 ```apache
 <VirtualHost *:80>
-    ServerName ai.fitform100.net
+    ServerName rkmnd.fitform100.net
     ServerAdmin admin@fitform100.net
-    DocumentRoot /var/www/html/ai.fitform100.net/public
+    DocumentRoot /var/www/html/rkmnd.fitform100.net/public
 
-    <Directory /var/www/html/ai.fitform100.net/public>
+    <Directory /var/www/html/rkmnd.fitform100.net/public>
         Options -Indexes +FollowSymLinks
         AllowOverride All
         Require all granted
     </Directory>
 
-    ErrorLog ${APACHE_LOG_DIR}/ai.fitform100.net-error.log
-    CustomLog ${APACHE_LOG_DIR}/ai.fitform100.net-access.log combined
+    ErrorLog ${APACHE_LOG_DIR}/rkmnd.fitform100.net-error.log
+    CustomLog ${APACHE_LOG_DIR}/rkmnd.fitform100.net-access.log combined
 </VirtualHost>
 ```
 
 **Enable site:**
 ```bash
 # Enable the site
-sudo a2ensite ai.fitform100.net.conf
+sudo a2ensite rkmnd.fitform100.net.conf
 
 # Enable mod_rewrite (if not already enabled)
 sudo a2enmod rewrite
@@ -219,13 +219,13 @@ sudo systemctl reload apache2
 
 ### Option B: Nginx Configuration
 
-Create file: `/etc/nginx/sites-available/ai.fitform100.net`
+Create file: `/etc/nginx/sites-available/rkmnd.fitform100.net`
 
 ```nginx
 server {
     listen 80;
-    server_name ai.fitform100.net;
-    root /var/www/html/ai.fitform100.net/public;
+    server_name rkmnd.fitform100.net;
+    root /var/www/html/rkmnd.fitform100.net/public;
 
     add_header X-Frame-Options "SAMEORIGIN";
     add_header X-Content-Type-Options "nosniff";
@@ -258,7 +258,7 @@ server {
 **Enable site:**
 ```bash
 # Create symlink
-sudo ln -s /etc/nginx/sites-available/ai.fitform100.net /etc/nginx/sites-enabled/
+sudo ln -s /etc/nginx/sites-available/rkmnd.fitform100.net /etc/nginx/sites-enabled/
 
 # Test Nginx configuration
 sudo nginx -t
@@ -281,9 +281,9 @@ sudo apt install certbot python3-certbot-apache  # For Apache
 sudo apt install certbot python3-certbot-nginx   # For Nginx
 
 # Get SSL certificate
-sudo certbot --apache -d ai.fitform100.net    # For Apache
+sudo certbot --apache -d rkmnd.fitform100.net    # For Apache
 # OR
-sudo certbot --nginx -d ai.fitform100.net     # For Nginx
+sudo certbot --nginx -d rkmnd.fitform100.net     # For Nginx
 
 # Follow the prompts
 # Choose to redirect HTTP to HTTPS (recommended)
@@ -304,15 +304,15 @@ If you have an existing SSL certificate, update your virtual host:
 **Apache:**
 ```apache
 <VirtualHost *:443>
-    ServerName ai.fitform100.net
-    DocumentRoot /var/www/html/ai.fitform100.net/public
+    ServerName rkmnd.fitform100.net
+    DocumentRoot /var/www/html/rkmnd.fitform100.net/public
 
     SSLEngine on
     SSLCertificateFile /path/to/cert.pem
     SSLCertificateKeyFile /path/to/key.pem
     SSLCertificateChainFile /path/to/chain.pem
 
-    <Directory /var/www/html/ai.fitform100.net/public>
+    <Directory /var/www/html/rkmnd.fitform100.net/public>
         Options -Indexes +FollowSymLinks
         AllowOverride All
         Require all granted
@@ -346,7 +346,7 @@ composer dump-autoload --optimize
 
 ### Test Checklist:
 
-1. **Visit domain**: https://ai.fitform100.net
+1. **Visit domain**: https://rkmnd.fitform100.net
    - [ ] Page loads without errors
    - [ ] HTTPS is active (green lock)
    - [ ] CSS/JS loads from CDN
@@ -366,7 +366,7 @@ composer dump-autoload --optimize
 4. **Test API Connection**
    ```bash
    # SSH into server
-   cd /var/www/html/ai.fitform100.net
+   cd /var/www/html/rkmnd.fitform100.net
    php artisan backend:test
    ```
 
@@ -376,7 +376,7 @@ composer dump-autoload --optimize
 
 ### Option 1: Via Tinker (SSH)
 ```bash
-cd /var/www/html/ai.fitform100.net
+cd /var/www/html/rkmnd.fitform100.net
 php artisan tinker
 ```
 
@@ -410,11 +410,11 @@ Manually insert into database using phpMyAdmin or MySQL client.
 ### Set Up Logs
 ```bash
 # View Laravel logs
-tail -f /var/www/html/ai.fitform100.net/storage/logs/laravel.log
+tail -f /var/www/html/rkmnd.fitform100.net/storage/logs/laravel.log
 
 # View web server logs
-tail -f /var/log/apache2/ai.fitform100.net-error.log  # Apache
-tail -f /var/log/nginx/error.log                      # Nginx
+tail -f /var/log/apache2/rkmnd.fitform100.net-error.log  # Apache
+tail -f /var/log/nginx/error.log                         # Nginx
 ```
 
 ### Set Up Cron (for scheduled tasks)
@@ -423,7 +423,7 @@ tail -f /var/log/nginx/error.log                      # Nginx
 crontab -e
 
 # Add Laravel scheduler
-* * * * * cd /var/www/html/ai.fitform100.net && php artisan schedule:run >> /dev/null 2>&1
+* * * * * cd /var/www/html/rkmnd.fitform100.net && php artisan schedule:run >> /dev/null 2>&1
 ```
 
 ### Regular Maintenance
@@ -554,7 +554,7 @@ Once deployed successfully:
 
 ---
 
-**Deployment URL**: https://ai.fitform100.net  
+**Deployment URL**: https://rkmnd.fitform100.net  
 **Repository**: https://github.com/dansoloway/rkmnd_dashboard  
 **Status**: Ready to Deploy! 🚀
 
