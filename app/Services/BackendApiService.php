@@ -190,6 +190,17 @@ class BackendApiService
     // ==========================================
 
     /**
+     * Get public URL for audio file
+     * No cache - public URLs don't expire
+     * 
+     * @param string $audioKey S3 key like "tenant_1/videos/123/audio_preview.mp3"
+     */
+    public function getPublicUrl(string $audioKey): array
+    {
+        return $this->makeRequest('get', "/api/v1/s3/public-url/" . urlencode($audioKey));
+    }
+
+    /**
      * Get presigned URL for audio file
      * No cache - generate fresh URLs (they expire in 1 hour)
      * 
