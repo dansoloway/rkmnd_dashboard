@@ -109,19 +109,37 @@ class VideoController extends Controller
         try {
             $api = $this->getApiService();
 
-            // Get video details
-            $video = $api->getVideoById($id);
+            // Get full video details including embeddings and audio
+            $response = $api->getVideoById($id);
+            
+            // The API returns a nested structure: {status, video, embeddings, audio_previews}
+            $video = $response['video'] ?? $response;
+            $embeddings = $response['embeddings'] ?? [];
+            $audioPreviews = $response['audio_previews'] ?? [];
 
             // Get related videos
-            $relatedVideos = $api->getRelatedVideos($id, 6);
-
-            // Get audio preview URL if available
-            $audioUrl = null;
-            if (!empty($video['audio_s3_key'])) {
-                $audioUrl = $api->getAudioPreviewUrl($id);
+            $relatedVideos = [];
+            try {
+                $relatedVideos = $api->getRelatedVideos($id, 6);
+            } catch (\Exception $e) {
+                Log::warning('Failed to get related videos', ['video_id' => $id]);
             }
 
-            return view('videos.show', compact('video', 'relatedVideos', 'audioUrl'));
+            // Get audio preview presigned URL if available
+            $audioUrl = null;
+            if (!empty($audioPreviews)) {
+                $audioPreview = $audioPreviews[0];
+                if (!empty($audioPreview['s3_key'])) {
+                    try {
+                        $presignedResponse = $api->getPresignedUrl($audioPreview['s3_key']);
+                        $audioUrl = $presignedResponse['presigned_url'] ?? $presignedResponse['url'] ?? null;
+                    } catch (\Exception $e) {
+                        Log::warning('Failed to get presigned URL', ['s3_key' => $audioPreview['s3_key']]);
+                    }
+                }
+            }
+
+            return view('videos.show', compact('video', 'embeddings', 'audioPreviews', 'relatedVideos', 'audioUrl'));
 
         } catch (\Exception $e) {
             Log::error('Failed to load video', [

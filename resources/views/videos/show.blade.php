@@ -133,6 +133,55 @@
                             </div>
                         @endif
 
+                        @if(!empty($video['wp_post_id']))
+                            <div>
+                                <dt class="text-sm font-medium text-gray-500">WordPress Post ID</dt>
+                                <dd class="mt-1 text-sm text-gray-900">{{ $video['wp_post_id'] }}</dd>
+                            </div>
+                        @endif
+
+                        @if(!empty($video['jwp_id']))
+                            <div>
+                                <dt class="text-sm font-medium text-gray-500">JW Player ID</dt>
+                                <dd class="mt-1 text-sm text-gray-900 font-mono text-xs">{{ $video['jwp_id'] }}</dd>
+                            </div>
+                        @endif
+
+                        @if(!empty($video['body_area']))
+                            <div>
+                                <dt class="text-sm font-medium text-gray-500">Body Area</dt>
+                                <dd class="mt-1 text-sm text-gray-900">{{ $video['body_area'] }}</dd>
+                            </div>
+                        @endif
+
+                        @if(!empty($video['helps_with']))
+                            <div>
+                                <dt class="text-sm font-medium text-gray-500">Helps With</dt>
+                                <dd class="mt-1 text-sm text-gray-900">{{ $video['helps_with'] }}</dd>
+                            </div>
+                        @endif
+
+                        @if(!empty($video['props']))
+                            <div>
+                                <dt class="text-sm font-medium text-gray-500">Props Needed</dt>
+                                <dd class="mt-1 text-sm text-gray-900">{{ $video['props'] }}</dd>
+                            </div>
+                        @endif
+
+                        @if(!empty($video['video_time']))
+                            <div>
+                                <dt class="text-sm font-medium text-gray-500">Duration</dt>
+                                <dd class="mt-1 text-sm text-gray-900">{{ $video['video_time'] }}</dd>
+                            </div>
+                        @endif
+
+                        @if(!empty($video['video_category']))
+                            <div>
+                                <dt class="text-sm font-medium text-gray-500">Categories</dt>
+                                <dd class="mt-1 text-sm text-gray-900">{{ $video['video_category'] }}</dd>
+                            </div>
+                        @endif
+
                         @if(!empty($video['created_at']))
                             <div>
                                 <dt class="text-sm font-medium text-gray-500">Created</dt>
@@ -140,14 +189,121 @@
                             </div>
                         @endif
 
-                        @if(!empty($video['jwplayer_id']))
+                        @if(!empty($video['updated_at']))
                             <div>
-                                <dt class="text-sm font-medium text-gray-500">JW Player ID</dt>
-                                <dd class="mt-1 text-sm text-gray-900 font-mono text-xs">{{ $video['jwplayer_id'] }}</dd>
+                                <dt class="text-sm font-medium text-gray-500">Last Updated</dt>
+                                <dd class="mt-1 text-sm text-gray-900">{{ date('M d, Y', strtotime($video['updated_at'])) }}</dd>
                             </div>
                         @endif
                     </dl>
                 </div>
+            </div>
+
+            <!-- AI Processing Info -->
+            <div class="bg-white rounded-lg shadow-sm p-6">
+                <h3 class="text-lg font-heading font-medium text-gray-900 mb-4">AI Processing</h3>
+                
+                <!-- Embeddings -->
+                @if(!empty($embeddings))
+                    <div class="mb-6">
+                        <div class="flex items-center justify-between mb-2">
+                            <h4 class="text-sm font-medium text-gray-700">Vector Embeddings</h4>
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                ✓ Generated
+                            </span>
+                        </div>
+                        @foreach($embeddings as $embedding)
+                            <div class="bg-gray-50 rounded-lg p-3 text-xs space-y-1">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-500">Namespace:</span>
+                                    <span class="font-mono text-gray-900">{{ $embedding['namespace'] ?? 'N/A' }}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-500">Scheme:</span>
+                                    <span class="text-gray-900">{{ $embedding['embedding_scheme'] ?? 'N/A' }}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-500">Pinecone ID:</span>
+                                    <span class="font-mono text-gray-900">{{ $embedding['pinecone_id'] ?? 'N/A' }}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-500">Created:</span>
+                                    <span class="text-gray-900">{{ !empty($embedding['created_at']) ? date('M d, Y', strtotime($embedding['created_at'])) : 'N/A' }}</span>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                @else
+                    <div class="mb-6">
+                        <div class="flex items-center justify-between mb-2">
+                            <h4 class="text-sm font-medium text-gray-700">Vector Embeddings</h4>
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                ⏳ Pending
+                            </span>
+                        </div>
+                        <p class="text-xs text-gray-500">No embeddings generated yet</p>
+                    </div>
+                @endif
+
+                <!-- Audio Previews -->
+                @if(!empty($audioPreviews))
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <h4 class="text-sm font-medium text-gray-700">Audio Preview</h4>
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                ✓ Generated
+                            </span>
+                        </div>
+                        @foreach($audioPreviews as $audio)
+                            <div class="bg-gray-50 rounded-lg p-3 text-xs space-y-2">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-500">S3 Key:</span>
+                                    <span class="font-mono text-gray-900 text-right break-all">{{ $audio['s3_key'] ?? 'N/A' }}</span>
+                                </div>
+                                @if(!empty($audio['duration_seconds']))
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-500">Duration:</span>
+                                        <span class="text-gray-900">{{ $audio['duration_seconds'] }} seconds</span>
+                                    </div>
+                                @endif
+                                @if(!empty($audio['file_size_bytes']))
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-500">File Size:</span>
+                                        <span class="text-gray-900">{{ number_format($audio['file_size_bytes'] / 1024, 2) }} KB</span>
+                                    </div>
+                                @endif
+                                <div class="flex justify-between">
+                                    <span class="text-gray-500">Voice ID:</span>
+                                    <span class="font-mono text-gray-900">{{ $audio['voice_id'] ?? 'N/A' }}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-500">Status:</span>
+                                    <span class="text-gray-900">{{ $audio['generation_status'] ?? 'N/A' }}</span>
+                                </div>
+                                
+                                <!-- Audio Source Text -->
+                                @if(!empty($audio['source_text']))
+                                    <div class="mt-3 pt-3 border-t border-gray-200">
+                                        <span class="text-gray-500 block mb-1">Audio Script:</span>
+                                        <div class="bg-white rounded p-2 text-gray-700 max-h-32 overflow-y-auto">
+                                            {{ $audio['source_text'] }}
+                                        </div>
+                                    </div>
+                                @endif
+                            </div>
+                        @endforeach
+                    </div>
+                @else
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <h4 class="text-sm font-medium text-gray-700">Audio Preview</h4>
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                ⏳ Pending
+                            </span>
+                        </div>
+                        <p class="text-xs text-gray-500">No audio preview generated yet</p>
+                    </div>
+                @endif
             </div>
         </div>
 
