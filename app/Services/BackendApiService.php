@@ -199,8 +199,8 @@ class BackendApiService
     public function getPresignedUrl(string $audioKey, int $expiresIn = 3600): array
     {
         return $this->makeRequest('post', '/api/v1/s3/presigned-url', [
-            'object_key' => $audioKey,
-            'expires_in' => $expiresIn
+            's3_key' => $audioKey,
+            'expiration' => $expiresIn
         ]);
     }
 
