@@ -51,8 +51,17 @@ class VideoController extends Controller
 
             // Get videos from API
             $response = $api->getVideos($filters);
-            $videos = $response['videos'] ?? [];
-            $total = $response['total'] ?? 0;
+            
+            // API returns a direct array of videos, not wrapped in 'videos' key
+            if (isset($response['videos'])) {
+                // Wrapped format (with total)
+                $videos = $response['videos'];
+                $total = $response['total'] ?? count($videos);
+            } else {
+                // Direct array format
+                $videos = $response;
+                $total = count($videos);
+            }
 
             // Get stats for filters
             $stats = $api->getWordPressStats();
