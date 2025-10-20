@@ -166,12 +166,17 @@ class BackendApiService
      * Search videos using AI semantic search
      * No cache - always get fresh results
      */
-    public function searchVideos(string $query, int $limit = 10): array
+    public function searchVideos(string $query, int $limit = 10, ?string $namespace = null): array
     {
-        return $this->makeRequest('post', '/api/v1/search/semantic', [
-            'query' => $query,
-            'limit' => $limit
-        ]);
+        $params = [
+            'query' => $query
+        ];
+        
+        if ($namespace) {
+            $params['namespace'] = $namespace;
+        }
+        
+        return $this->makeRequest('post', '/api/v1/search', $params);
     }
 
     /**

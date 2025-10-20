@@ -216,12 +216,19 @@ class TestBackendApi extends Command
     protected function testSearch($api)
     {
         $result = $this->testEndpoint('Semantic Search', function() use ($api) {
-            return $api->searchVideos('yoga stretching', 5);
+            return $api->searchVideos('yoga stretching');
         });
 
-        if ($result && isset($result['results'])) {
-            $count = count($result['results']);
+        if ($result) {
+            // API returns results under 'videos' key
+            $videos = $result['videos'] ?? $result['results'] ?? [];
+            $count = count($videos);
             $this->line("   Results: {$count} videos found");
+            
+            if ($count > 0 && isset($videos[0]['title'])) {
+                $this->line("   First Result: {$videos[0]['title']}");
+            }
+            
             $this->info('');
         }
     }
