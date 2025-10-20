@@ -126,7 +126,7 @@ class TestBackendApi extends Command
     protected function testWordPressStats($api)
     {
         $result = $this->testEndpoint('WordPress Stats', function() use ($api) {
-            return $api->getStats();
+            return $api->getWordPressStats();
         });
 
         if ($result) {
