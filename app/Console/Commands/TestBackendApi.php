@@ -130,9 +130,17 @@ class TestBackendApi extends Command
         });
 
         if ($result) {
-            $this->line("   Total Videos: {$result['total_videos']}");
-            $this->line("   With Embeddings: {$result['videos_with_embeddings']}");
-            $this->line("   With Audio: {$result['videos_with_audio_previews']}");
+            // API returns data nested under "stats" key
+            $stats = $result['stats'] ?? $result;
+            
+            if (isset($stats['total_videos'])) {
+                $this->line("   Total Videos: {$stats['total_videos']}");
+                $this->line("   With Embeddings: {$stats['videos_with_embeddings']}");
+                $this->line("   With Audio: {$stats['videos_with_audio_previews']}");
+                $this->line("   Completion Rate: {$stats['completion_rate']}%");
+            } else {
+                $this->line("   Response: " . json_encode($result, JSON_PRETTY_PRINT));
+            }
             $this->info('');
         }
     }
@@ -188,8 +196,19 @@ class TestBackendApi extends Command
         });
 
         if ($result) {
-            $this->line("   Bucket: {$result['bucket']}");
-            $this->line("   Total Files: {$result['total_files']}");
+            // Handle nested response structure
+            $info = $result['bucket_info'] ?? $result;
+            
+            if (isset($info['bucket'])) {
+                $this->line("   Bucket: {$info['bucket']}");
+                
+                if (isset($info['tenant_stats'])) {
+                    $this->line("   Total Files: {$info['tenant_stats']['file_count']}");
+                    $this->line("   Audio Previews: {$info['tenant_stats']['audio_previews']}");
+                } else {
+                    $this->line("   Total Files: " . ($info['total_files'] ?? 'N/A'));
+                }
+            }
             $this->info('');
         }
     }
