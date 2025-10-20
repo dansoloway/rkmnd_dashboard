@@ -125,16 +125,23 @@ class VideoController extends Controller
                 Log::warning('Failed to get related videos', ['video_id' => $id]);
             }
 
-            // Get audio preview public URL if available
+            // Get audio preview presigned URL if available
             $audioUrl = null;
             if (!empty($audioPreviews)) {
                 $audioPreview = $audioPreviews[0];
                 if (!empty($audioPreview['s3_key'])) {
                     try {
-                        $publicResponse = $api->getPublicUrl($audioPreview['s3_key']);
-                        $audioUrl = $publicResponse['public_url'] ?? $publicResponse['url'] ?? null;
+                        // Use presigned URL for private buckets
+                        $presignedResponse = $api->getPresignedUrl($audioPreview['s3_key'], 3600);
+                        $audioUrl = $presignedResponse['presigned_url'] ?? $presignedResponse['url'] ?? null;
                     } catch (\Exception $e) {
-                        Log::warning('Failed to get public URL', ['s3_key' => $audioPreview['s3_key']]);
+                        Log::warning('Failed to get presigned URL', [
+                            's3_key' => $audioPreview['s3_key'],
+                            'error' => $e->getMessage()
+                        ]);
+                        
+                        // Fallback: try using s3_url directly (might work for some buckets)
+                        $audioUrl = $audioPreview['s3_url'] ?? null;
                     }
                 }
             }
