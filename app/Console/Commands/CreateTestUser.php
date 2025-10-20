@@ -66,6 +66,7 @@ class CreateTestUser extends Command
                 if ($this->confirm('Create a test tenant?', true)) {
                     $tenant = Tenant::create([
                         'name' => 'test_client',
+                        'display_name' => 'Test Client',
                         'api_key' => config('backend.default_api_key'),
                     ]);
                     $this->info("✅ Created tenant: {$tenant->name}");
