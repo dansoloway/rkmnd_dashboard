@@ -61,6 +61,9 @@
                         <a href="{{ route('analytics.index') }}" class="inline-flex items-center px-1 pt-1 border-b-2 {{ request()->routeIs('analytics.*') ? 'border-blue-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700' }}">
                             Analytics
                         </a>
+                        <a href="{{ route('sync-logs.index') }}" class="inline-flex items-center px-1 pt-1 border-b-2 {{ request()->routeIs('sync-logs.*') ? 'border-blue-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700' }}">
+                            Sync Logs
+                        </a>
                         <a href="{{ route('account.index') }}" class="inline-flex items-center px-1 pt-1 border-b-2 {{ request()->routeIs('account.*') ? 'border-blue-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700' }}">
                             Account
                         </a>
@@ -93,6 +96,9 @@
                 </a>
                 <a href="{{ route('analytics.index') }}" class="block px-3 py-2 rounded-md text-base font-medium {{ request()->routeIs('analytics.*') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900' }}">
                     Analytics
+                </a>
+                <a href="{{ route('sync-logs.index') }}" class="block px-3 py-2 rounded-md text-base font-medium {{ request()->routeIs('sync-logs.*') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900' }}">
+                    Sync Logs
                 </a>
                 <a href="{{ route('account.index') }}" class="block px-3 py-2 rounded-md text-base font-medium {{ request()->routeIs('account.*') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900' }}">
                     Account

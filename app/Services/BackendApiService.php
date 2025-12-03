@@ -316,6 +316,23 @@ class BackendApiService
         $cacheKey = $this->getCacheKey($endpoint, $params);
         Cache::forget($cacheKey);
     }
+
+    // ==========================================
+    // SYNC LOG ENDPOINTS
+    // ==========================================
+
+    /**
+     * Get sync logs for current tenant
+     * Cache: 1 minute (sync logs change frequently)
+     * 
+     * @param int $limit Number of logs to return (default 50)
+     */
+    public function getSyncLogs(int $limit = 50): array
+    {
+        return $this->makeRequest('get', '/api/v1/wordpress/sync/logs', [
+            'limit' => $limit
+        ], 60);
+    }
 }
 
 

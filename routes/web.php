@@ -26,6 +26,9 @@ Route::middleware(['auth'])->group(function () {
     // Analytics
     Route::get('/analytics', [App\Http\Controllers\AnalyticsController::class, 'index'])->name('analytics.index');
     
+    // Sync Logs
+    Route::get('/sync-logs', [App\Http\Controllers\SyncLogController::class, 'index'])->name('sync-logs.index');
+    
     // Account
     Route::get('/account', [App\Http\Controllers\AccountController::class, 'index'])->name('account.index');
     Route::put('/account', [App\Http\Controllers\AccountController::class, 'update'])->name('account.update');
