@@ -333,6 +333,15 @@ class BackendApiService
             'limit' => $limit
         ], 60);
     }
+
+    /**
+     * Clear all sync logs for current tenant
+     * No cache - direct action
+     */
+    public function clearSyncLogs(): array
+    {
+        return $this->makeRequest('delete', '/api/v1/wordpress/sync/logs/clear', []);
+    }
 }
 
 

@@ -13,7 +13,29 @@
                     Track video synchronization operations and their results
                 </p>
             </div>
+            <div>
+                @if(!empty($logs))
+                    <form method="POST" action="{{ route('sync-logs.clear') }}" class="inline" onsubmit="return confirm('Are you sure you want to clear all sync logs? This will reset all statistics to zero.');">
+                        @csrf
+                        <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-red-700 rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                            🗑️ Clear All Logs
+                        </button>
+                    </form>
+                @endif
+            </div>
         </div>
+        
+        @if(session('success'))
+            <div class="mt-4 p-3 bg-green-50 border border-green-200 rounded-md">
+                <p class="text-sm text-green-800">{{ session('success') }}</p>
+            </div>
+        @endif
+        
+        @if(session('error'))
+            <div class="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
+                <p class="text-sm text-red-800">{{ session('error') }}</p>
+            </div>
+        @endif
     </div>
 
     @if(isset($error))

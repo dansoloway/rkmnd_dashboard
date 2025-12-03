@@ -39,5 +39,30 @@ class SyncLogController extends Controller
             ]);
         }
     }
+
+    /**
+     * Clear all sync logs (reset statistics)
+     */
+    public function clear(Request $request)
+    {
+        try {
+            // Get API service with tenant's API key
+            $apiKey = session('tenant_api_key') ?? config('backend.default_api_key');
+            $api = new BackendApiService($apiKey);
+
+            // Clear sync logs via backend API
+            $result = $api->clearSyncLogs();
+            
+            $message = $result['message'] ?? 'All sync logs cleared successfully!';
+            return redirect()->route('sync-logs.index')->with('success', $message);
+            
+        } catch (\Exception $e) {
+            Log::error('Clear sync logs failed', [
+                'error' => $e->getMessage()
+            ]);
+            
+            return redirect()->route('sync-logs.index')->with('error', 'Failed to clear sync logs: ' . $e->getMessage());
+        }
+    }
 }
 
