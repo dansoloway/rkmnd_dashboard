@@ -53,6 +53,12 @@ class SyncLogController extends Controller
             // Clear sync logs via backend API
             $result = $api->clearSyncLogs();
             
+            // Clear the cache for sync logs endpoint to ensure fresh data
+            $api->clearEndpointCache('/api/v1/wordpress/sync/logs', ['limit' => 50]);
+            
+            // Also clear all cache to be safe
+            $api->clearCache();
+            
             $message = $result['message'] ?? 'All sync logs cleared successfully!';
             return redirect()->route('sync-logs.index')->with('success', $message);
             

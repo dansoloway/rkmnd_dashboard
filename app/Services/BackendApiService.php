@@ -340,7 +340,36 @@ class BackendApiService
      */
     public function clearSyncLogs(): array
     {
-        return $this->makeRequest('delete', '/api/v1/wordpress/sync/logs/clear', []);
+        try {
+            // Use explicit DELETE method - don't cache this request
+            $response = Http::timeout($this->timeout)
+                ->withToken($this->apiKey)
+                ->delete($this->baseUrl . '/api/v1/wordpress/sync/logs/clear');
+
+            if ($response->successful()) {
+                // Clear all sync logs cache entries (for different limit values)
+                $this->clearEndpointCache('/api/v1/wordpress/sync/logs', ['limit' => 10]);
+                $this->clearEndpointCache('/api/v1/wordpress/sync/logs', ['limit' => 50]);
+                $this->clearEndpointCache('/api/v1/wordpress/sync/logs', ['limit' => 100]);
+                
+                return $response->json();
+            }
+
+            Log::error('Backend API Error - Clear Sync Logs', [
+                'endpoint' => '/api/v1/wordpress/sync/logs/clear',
+                'status' => $response->status(),
+                'body' => $response->body()
+            ]);
+
+            throw new Exception("API request failed: {$response->status()}");
+
+        } catch (Exception $e) {
+            Log::error('Backend API Exception - Clear Sync Logs', [
+                'endpoint' => '/api/v1/wordpress/sync/logs/clear',
+                'message' => $e->getMessage()
+            ]);
+            throw $e;
+        }
     }
 }
 
