@@ -18,6 +18,7 @@ Route::middleware(['auth'])->group(function () {
     
     // Dashboard
     Route::get('/dashboard', [\App\Http\Controllers\DashboardController::class, 'index'])->name('dashboard');
+    Route::post('/dashboard/clear-cache', [\App\Http\Controllers\DashboardController::class, 'clearCache'])->name('dashboard.clear-cache');
     
     // Videos
     Route::get('/videos', [App\Http\Controllers\VideoController::class, 'index'])->name('videos.index');
