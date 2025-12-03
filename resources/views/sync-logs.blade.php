@@ -66,6 +66,9 @@
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                 Errors
                             </th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Changes
+                            </th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
@@ -132,6 +135,21 @@
                                         <span class="px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800">
                                             {{ number_format($log['errors_encountered']) }}
                                         </span>
+                                    @else
+                                        <span class="text-gray-400">-</span>
+                                    @endif
+                                </td>
+                                <td class="px-6 py-4 text-sm">
+                                    @if(!empty($log['change_details']) && is_array($log['change_details']))
+                                        <div class="flex flex-wrap gap-1">
+                                            @foreach($log['change_details'] as $field => $count)
+                                                <span class="px-2 py-1 text-xs font-medium rounded bg-purple-100 text-purple-800" title="{{ ucfirst(str_replace('_', ' ', $field)) }} changed in {{ $count }} video(s)">
+                                                    {{ ucfirst(str_replace('_', ' ', $field)) }}: {{ $count }}
+                                                </span>
+                                            @endforeach
+                                        </div>
+                                    @elseif(($log['videos_updated'] ?? 0) > 0)
+                                        <span class="text-gray-400 text-xs">No field changes detected</span>
                                     @else
                                         <span class="text-gray-400">-</span>
                                     @endif
