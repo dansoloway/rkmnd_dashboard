@@ -79,13 +79,19 @@ echo ""
 
 # Step 4: Check cache
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "STEP 4: Checking Cache Status"
+echo "STEP 4: Clearing All Caches"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-if php artisan cache:clear > /dev/null 2>&1; then
-    echo -e "${GREEN}✅ Cache cleared${NC}"
-else
-    echo -e "${RED}❌ Failed to clear cache${NC}"
-fi
+echo "Clearing application cache..."
+php artisan cache:clear > /dev/null 2>&1 && echo -e "${GREEN}✅ Application cache cleared${NC}" || echo -e "${RED}❌ Failed to clear cache${NC}"
+
+echo "Clearing route cache..."
+php artisan route:clear > /dev/null 2>&1 && echo -e "${GREEN}✅ Route cache cleared${NC}" || echo -e "${YELLOW}⚠️  Route cache already clear${NC}"
+
+echo "Clearing config cache..."
+php artisan config:clear > /dev/null 2>&1 && echo -e "${GREEN}✅ Config cache cleared${NC}" || echo -e "${YELLOW}⚠️  Config cache already clear${NC}"
+
+echo "Clearing view cache..."
+php artisan view:clear > /dev/null 2>&1 && echo -e "${GREEN}✅ View cache cleared${NC}" || echo -e "${YELLOW}⚠️  View cache already clear${NC}"
 echo ""
 
 # Step 5: Check database connection (if accessible)
@@ -117,8 +123,59 @@ fi
 echo ""
 
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "TESTING API ENDPOINT"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo -e "${YELLOW}Testing sync logs endpoint...${NC}"
+API_KEY=$(grep "BACKEND_API_KEY\|TENANT_API_KEY" .env 2>/dev/null | head -1 | cut -d '=' -f2 | tr -d '"' | tr -d "'" | xargs)
+if [ -z "$API_KEY" ]; then
+    echo -e "${RED}⚠️  Could not find API key in .env${NC}"
+    echo "   Please test manually with: curl -H \"Authorization: Bearer YOUR_KEY\" $API_URL/api/v1/wordpress/sync/logs?limit=5"
+else
+    echo "Testing GET /api/v1/wordpress/sync/logs..."
+    RESPONSE=$(curl -s -w "\nHTTP_CODE:%{http_code}" -H "Authorization: Bearer $API_KEY" "$API_URL/api/v1/wordpress/sync/logs?limit=5" 2>&1)
+    HTTP_CODE=$(echo "$RESPONSE" | grep "HTTP_CODE" | cut -d':' -f2)
+    BODY=$(echo "$RESPONSE" | grep -v "HTTP_CODE")
+    
+    if [ "$HTTP_CODE" = "200" ]; then
+        echo -e "${GREEN}✅ GET endpoint works (HTTP $HTTP_CODE)${NC}"
+    else
+        echo -e "${RED}❌ GET endpoint failed (HTTP $HTTP_CODE)${NC}"
+        echo "Response: $BODY" | head -5
+    fi
+    
+    echo ""
+    echo "Testing DELETE /api/v1/wordpress/sync/logs/clear..."
+    DELETE_RESPONSE=$(curl -s -w "\nHTTP_CODE:%{http_code}" -X DELETE -H "Authorization: Bearer $API_KEY" "$API_URL/api/v1/wordpress/sync/logs/clear" 2>&1)
+    DELETE_CODE=$(echo "$DELETE_RESPONSE" | grep "HTTP_CODE" | cut -d':' -f2)
+    DELETE_BODY=$(echo "$DELETE_RESPONSE" | grep -v "HTTP_CODE")
+    
+    if [ "$DELETE_CODE" = "200" ] || [ "$DELETE_CODE" = "404" ]; then
+        if [ "$DELETE_CODE" = "404" ]; then
+            echo -e "${RED}❌ DELETE endpoint not found (HTTP 404)${NC}"
+            echo -e "${YELLOW}⚠️  This endpoint may not be deployed on the AI Pipeline server${NC}"
+            echo "   The endpoint exists in code but may need to be deployed/restarted"
+        else
+            echo -e "${GREEN}✅ DELETE endpoint works (HTTP $DELETE_CODE)${NC}"
+        fi
+    else
+        echo -e "${RED}❌ DELETE endpoint failed (HTTP $DELETE_CODE)${NC}"
+        echo "Response: $DELETE_BODY" | head -5
+    fi
+fi
+echo ""
+
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "NEXT STEPS:"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+if [ "$DELETE_CODE" = "404" ]; then
+    echo -e "${YELLOW}⚠️  ACTION REQUIRED:${NC}"
+    echo "1. SSH to AI Pipeline server: ssh ubuntu@52.41.213.228"
+    echo "2. Navigate: cd ~/tuneup_ai_pipeline"
+    echo "3. Pull latest code: git pull"
+    echo "4. Restart API server (if using systemd): sudo systemctl restart ai-pipeline"
+    echo "   Or restart manually if running in screen/tmux"
+    echo ""
+fi
 echo "1. If API is unreachable, check AI Pipeline server status"
 echo "2. Review Laravel logs above for specific error messages"
 echo "3. Test API endpoint directly with curl (see DEBUG_SYNC_ERRORS.md)"
