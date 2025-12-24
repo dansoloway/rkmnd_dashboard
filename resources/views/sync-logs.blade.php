@@ -13,7 +13,13 @@
                     Track video synchronization operations and their results
                 </p>
             </div>
-            <div>
+            <div class="flex gap-3">
+                <form method="POST" action="{{ route('sync-logs.trigger') }}" class="inline" onsubmit="return confirm('This will start a new sync operation. Continue?');">
+                    @csrf
+                    <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-blue-700 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                        🔄 Trigger Sync Now
+                    </button>
+                </form>
                 @if(!empty($logs))
                     <form method="POST" action="{{ route('sync-logs.clear') }}" class="inline" onsubmit="return confirm('Are you sure you want to clear all sync logs? This will reset all statistics to zero.');">
                         @csrf

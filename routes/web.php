@@ -29,6 +29,7 @@ Route::middleware(['auth'])->group(function () {
     
     // Sync Logs
     Route::get('/sync-logs', [App\Http\Controllers\SyncLogController::class, 'index'])->name('sync-logs.index');
+    Route::post('/sync-logs/trigger', [App\Http\Controllers\SyncLogController::class, 'trigger'])->name('sync-logs.trigger');
     Route::post('/sync-logs/clear', [App\Http\Controllers\SyncLogController::class, 'clear'])->name('sync-logs.clear');
     
     // Account

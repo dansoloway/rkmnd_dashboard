@@ -70,5 +70,30 @@ class SyncLogController extends Controller
             return redirect()->route('sync-logs.index')->with('error', 'Failed to clear sync logs: ' . $e->getMessage());
         }
     }
+
+    /**
+     * Trigger a new WordPress sync
+     */
+    public function trigger(Request $request)
+    {
+        try {
+            // Get API service with tenant's API key
+            $apiKey = session('tenant_api_key') ?? config('backend.default_api_key');
+            $api = new BackendApiService($apiKey);
+
+            // Trigger sync via backend API
+            $result = $api->triggerSync();
+            
+            $message = $result['message'] ?? 'Sync started successfully!';
+            return redirect()->route('sync-logs.index')->with('success', $message);
+            
+        } catch (\Exception $e) {
+            Log::error('Trigger sync failed', [
+                'error' => $e->getMessage()
+            ]);
+            
+            return redirect()->route('sync-logs.index')->with('error', 'Failed to trigger sync: ' . $e->getMessage());
+        }
+    }
 }
 

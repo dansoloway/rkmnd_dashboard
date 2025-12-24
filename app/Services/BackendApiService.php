@@ -371,6 +371,59 @@ class BackendApiService
             throw $e;
         }
     }
+
+    /**
+     * Trigger WordPress sync for current tenant
+     * No cache - direct action
+     * 
+     * @param array $options Optional sync options:
+     *   - sync_type: string (default: "manual")
+     *   - server_host: string (default: "54.213.84.124")
+     *   - server_user: string (default: "bitnami")
+     *   - server_path: string (default: "/home/bitnami/db_backups")
+     *   - ssh_key_path: string (default: "~/.ssh/id_rsa")
+     */
+    public function triggerSync(array $options = []): array
+    {
+        try {
+            $payload = array_merge([
+                'sync_type' => 'manual',
+                'server_host' => '54.213.84.124',
+                'server_user' => 'bitnami',
+                'server_path' => '/home/bitnami/db_backups',
+                'ssh_key_path' => '~/.ssh/id_rsa'
+            ], $options);
+
+            // Use explicit POST method - don't cache this request
+            $response = Http::timeout($this->timeout)
+                ->withToken($this->apiKey)
+                ->post($this->baseUrl . '/api/v1/wordpress/sync', $payload);
+
+            if ($response->successful()) {
+                // Clear sync logs cache to show new sync immediately
+                $this->clearEndpointCache('/api/v1/wordpress/sync/logs', ['limit' => 10]);
+                $this->clearEndpointCache('/api/v1/wordpress/sync/logs', ['limit' => 50]);
+                $this->clearEndpointCache('/api/v1/wordpress/sync/logs', ['limit' => 100]);
+                
+                return $response->json();
+            }
+
+            Log::error('Backend API Error - Trigger Sync', [
+                'endpoint' => '/api/v1/wordpress/sync',
+                'status' => $response->status(),
+                'body' => $response->body()
+            ]);
+
+            throw new Exception("API request failed: {$response->status()}");
+
+        } catch (Exception $e) {
+            Log::error('Backend API Exception - Trigger Sync', [
+                'endpoint' => '/api/v1/wordpress/sync',
+                'message' => $e->getMessage()
+            ]);
+            throw $e;
+        }
+    }
 }
 
 
