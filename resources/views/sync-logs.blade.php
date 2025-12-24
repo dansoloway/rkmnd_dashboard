@@ -157,6 +157,14 @@
                                         <span class="px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800">
                                             {{ number_format($log['errors_encountered']) }}
                                         </span>
+                                        @if(!empty($log['error_message']))
+                                            <button 
+                                                onclick="toggleError('error-{{ $log['id'] }}')" 
+                                                class="ml-2 text-red-600 hover:text-red-800 text-xs underline"
+                                                title="Click to view error details">
+                                                View Details
+                                            </button>
+                                        @endif
                                     @else
                                         <span class="text-gray-400">-</span>
                                     @endif
@@ -177,6 +185,16 @@
                                     @endif
                                 </td>
                             </tr>
+                            @if(!empty($log['error_message']))
+                            <tr id="error-{{ $log['id'] }}" class="hidden">
+                                <td colspan="9" class="px-6 py-4 bg-red-50 border-t border-red-200">
+                                    <div class="text-sm">
+                                        <p class="font-medium text-red-900 mb-2">Error Details:</p>
+                                        <pre class="text-xs text-red-800 bg-white p-3 rounded border border-red-200 overflow-x-auto whitespace-pre-wrap">{{ $log['error_message'] }}</pre>
+                                    </div>
+                                </td>
+                            </tr>
+                            @endif
                         @endforeach
                     </tbody>
                 </table>
@@ -261,5 +279,16 @@
         </div>
     @endif
 </div>
+
+@push('scripts')
+<script>
+function toggleError(errorId) {
+    const errorRow = document.getElementById(errorId);
+    if (errorRow) {
+        errorRow.classList.toggle('hidden');
+    }
+}
+</script>
+@endpush
 @endsection
 
