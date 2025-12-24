@@ -385,41 +385,94 @@ class BackendApiService
      */
     public function triggerSync(array $options = []): array
     {
-        try {
-            $payload = array_merge([
-                'sync_type' => 'manual',
-                'server_host' => '54.213.84.124',
-                'server_user' => 'bitnami',
-                'server_path' => '/home/bitnami/db_backups',
-                'ssh_key_path' => '~/.ssh/id_rsa'
-            ], $options);
+        $payload = array_merge([
+            'sync_type' => 'manual',
+            'server_host' => '54.213.84.124',
+            'server_user' => 'bitnami',
+            'server_path' => '/home/bitnami/db_backups',
+            'ssh_key_path' => '~/.ssh/id_rsa'
+        ], $options);
 
+        Log::info('Triggering WordPress sync', [
+            'endpoint' => '/api/v1/wordpress/sync',
+            'base_url' => $this->baseUrl,
+            'payload' => $payload,
+            'api_key_length' => strlen($this->apiKey ?? ''),
+            'timeout' => $this->timeout
+        ]);
+
+        try {
             // Use explicit POST method - don't cache this request
+            Log::debug('Making HTTP POST request to backend API', [
+                'url' => $this->baseUrl . '/api/v1/wordpress/sync',
+                'timeout' => $this->timeout
+            ]);
+
             $response = Http::timeout($this->timeout)
                 ->withToken($this->apiKey)
                 ->post($this->baseUrl . '/api/v1/wordpress/sync', $payload);
 
+            Log::debug('Received HTTP response', [
+                'status' => $response->status(),
+                'successful' => $response->successful(),
+                'headers' => $response->headers(),
+                'body_preview' => substr($response->body(), 0, 500)
+            ]);
+
             if ($response->successful()) {
+                $responseData = $response->json();
+                
+                Log::info('Sync triggered successfully', [
+                    'response' => $responseData,
+                    'sync_log_id' => $responseData['sync_log_id'] ?? null
+                ]);
+
                 // Clear sync logs cache to show new sync immediately
                 $this->clearEndpointCache('/api/v1/wordpress/sync/logs', ['limit' => 10]);
                 $this->clearEndpointCache('/api/v1/wordpress/sync/logs', ['limit' => 50]);
                 $this->clearEndpointCache('/api/v1/wordpress/sync/logs', ['limit' => 100]);
                 
-                return $response->json();
+                return $responseData;
             }
 
+            $errorBody = $response->body();
             Log::error('Backend API Error - Trigger Sync', [
                 'endpoint' => '/api/v1/wordpress/sync',
                 'status' => $response->status(),
-                'body' => $response->body()
+                'body' => $errorBody,
+                'headers' => $response->headers(),
+                'payload_sent' => $payload
             ]);
 
-            throw new Exception("API request failed: {$response->status()}");
+            throw new Exception("API request failed: {$response->status()} - {$errorBody}");
 
+        } catch (\Illuminate\Http\Client\ConnectionException $e) {
+            Log::error('Backend API Connection Exception - Trigger Sync', [
+                'endpoint' => '/api/v1/wordpress/sync',
+                'base_url' => $this->baseUrl,
+                'message' => $e->getMessage(),
+                'payload' => $payload,
+                'trace' => $e->getTraceAsString()
+            ]);
+            throw new Exception("Connection failed to backend API: {$e->getMessage()}");
+        } catch (\Illuminate\Http\Client\RequestException $e) {
+            Log::error('Backend API Request Exception - Trigger Sync', [
+                'endpoint' => '/api/v1/wordpress/sync',
+                'message' => $e->getMessage(),
+                'response' => $e->response?->body(),
+                'status' => $e->response?->status(),
+                'payload' => $payload,
+                'trace' => $e->getTraceAsString()
+            ]);
+            throw new Exception("Request failed: {$e->getMessage()}");
         } catch (Exception $e) {
             Log::error('Backend API Exception - Trigger Sync', [
                 'endpoint' => '/api/v1/wordpress/sync',
-                'message' => $e->getMessage()
+                'base_url' => $this->baseUrl,
+                'message' => $e->getMessage(),
+                'class' => get_class($e),
+                'payload' => $payload,
+                'trace' => $e->getTraceAsString()
             ]);
             throw $e;
         }
