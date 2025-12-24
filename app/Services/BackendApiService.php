@@ -385,13 +385,13 @@ class BackendApiService
      */
     public function triggerSync(array $options = []): array
     {
-        $payload = array_merge([
-            'sync_type' => 'manual',
-            'server_host' => '54.213.84.124',
-            'server_user' => 'bitnami',
-            'server_path' => '/home/bitnami/db_backups',
-            'ssh_key_path' => '~/.ssh/id_rsa'
-        ], $options);
+            $payload = array_merge([
+                'sync_type' => 'manual',
+                'server_host' => '54.213.84.124',
+                'server_user' => 'bitnami',
+                'server_path' => '/home/bitnami/db_backups',
+                'ssh_key_path' => '~/.ssh/id_ed25519'  // Changed from id_rsa to id_ed25519
+            ], $options);
 
         Log::info('Triggering WordPress sync', [
             'endpoint' => '/api/v1/wordpress/sync',
