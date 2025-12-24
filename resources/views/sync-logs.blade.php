@@ -171,6 +171,16 @@
                                                 View Details
                                             </button>
                                         @endif
+                                    @elseif(($log['status'] ?? '') === 'failed' && !empty($log['error_message']))
+                                        <span class="px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800">
+                                            Failed
+                                        </span>
+                                        <button 
+                                            onclick="toggleError('error-{{ $log['id'] }}')" 
+                                            class="ml-2 text-red-600 hover:text-red-800 text-xs underline"
+                                            title="Click to view error details">
+                                            View Details
+                                        </button>
                                     @else
                                         <span class="text-gray-400">-</span>
                                     @endif
