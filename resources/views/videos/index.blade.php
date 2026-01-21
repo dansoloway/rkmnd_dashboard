@@ -13,7 +13,7 @@
     <!-- Filters & Search -->
     <div class="bg-white rounded-lg shadow-sm p-6">
         <form method="GET" action="{{ route('videos.index') }}" class="space-y-4">
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
                 <!-- Search -->
                 <div class="md:col-span-2">
                     <label for="search" class="block text-sm font-medium text-gray-700 mb-1">Search</label>
@@ -25,6 +25,20 @@
                         placeholder="Search videos..." 
                         class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     >
+                </div>
+
+                <!-- Post Type Filter -->
+                <div>
+                    <label for="post_type" class="block text-sm font-medium text-gray-700 mb-1">Content Type</label>
+                    <select 
+                        id="post_type" 
+                        name="post_type" 
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    >
+                        <option value="">All Types</option>
+                        <option value="video" {{ ($filters['post_type'] ?? '') === 'video' ? 'selected' : '' }}>Videos</option>
+                        <option value="scheduled" {{ ($filters['post_type'] ?? '') === 'scheduled' ? 'selected' : '' }}>Scheduled</option>
+                    </select>
                 </div>
 
                 <!-- Category Filter -->
@@ -120,13 +134,18 @@
                             @endif
                         </div>
 
-                        @if(!empty($video['category']))
-                            <div class="mt-2">
+                        <div class="mt-2 flex flex-wrap gap-2">
+                            @if(!empty($video['post_type']))
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $video['post_type'] === 'scheduled' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800' }}">
+                                    {{ ucfirst($video['post_type']) }}
+                                </span>
+                            @endif
+                            @if(!empty($video['category']))
                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                                     {{ $video['category'] }}
                                 </span>
-                            </div>
-                        @endif
+                            @endif
+                        </div>
 
                         @if(!empty($video['audio_s3_key']))
                             <div class="mt-3">

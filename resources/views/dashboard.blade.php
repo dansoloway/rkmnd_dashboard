@@ -116,9 +116,16 @@
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             @foreach(array_slice($recentVideos, 0, 6) as $video)
                 <a href="{{ route('videos.show', $video['id']) }}" class="block border border-gray-200 rounded-lg p-4 hover:border-blue-500 hover:shadow-md transition">
-                    <h3 class="font-medium text-gray-900 line-clamp-2 mb-2">
-                        {{ $video['title'] }}
-                    </h3>
+                    <div class="flex items-start justify-between mb-2">
+                        <h3 class="font-medium text-gray-900 line-clamp-2 flex-1">
+                            {{ $video['title'] }}
+                        </h3>
+                        @if(!empty($video['post_type']))
+                            <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{ $video['post_type'] === 'scheduled' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800' }}">
+                                {{ ucfirst($video['post_type']) }}
+                            </span>
+                        @endif
+                    </div>
                     <div class="flex items-center justify-between text-sm text-gray-500">
                         <span>{{ $video['instructor'] ?? 'Unknown' }}</span>
                         @if($video['has_audio_preview'] ?? false)

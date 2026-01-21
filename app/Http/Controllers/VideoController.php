@@ -40,6 +40,7 @@ class VideoController extends Controller
                 'difficulty' => $request->input('difficulty'),
                 'instructor' => $request->input('instructor'),
                 'search' => $request->input('search'),
+                'post_type' => $request->input('post_type'),
                 'sort_by' => $request->input('sort_by', 'created_at'),
                 'sort_order' => $request->input('sort_order', 'desc'),
             ];
