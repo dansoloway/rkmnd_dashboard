@@ -177,9 +177,9 @@ class VideoController extends Controller
         try {
             $api = $this->getApiService();
 
-            // Get all videos (with high limit)
+            // Get first 10 videos for now (to avoid slow loading)
             $filters = [
-                'limit' => 10000, // Get all videos
+                'limit' => 10,
                 'offset' => 0,
             ];
 
