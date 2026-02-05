@@ -192,44 +192,86 @@ class VideoController extends Controller
                 $videos = $response;
             }
 
-            // Process videos and check URLs
+            // Process videos and fetch details for each to get thumbnail and audio URLs
             $processedVideos = [];
-            foreach ($videos as $video) {
-                // Extract thumbnail - check multiple possible locations
-                $thumbnail = $video['thumbnail'] 
-                    ?? $video['metadata']['thumbnail'] 
-                    ?? $video['metadata']['details_thumbnail'] 
-                    ?? null;
+            $totalVideos = count($videos);
+            
+            foreach ($videos as $index => $video) {
+                $videoId = $video['id'] ?? null;
+                $wpPostId = $video['wp_post_id'] ?? null;
+                $title = $video['title'] ?? 'Untitled';
+                $videoCategory = $video['video_category'] ?? 'N/A';
                 
-                // Extract audio file - check multiple possible locations
-                $audioFile = $video['audio_file'] 
-                    ?? $video['metadata']['audio_file'] 
-                    ?? null;
+                $thumbnail = null;
+                $audioFile = null;
                 
-                // Extract video category - check multiple possible locations
-                $videoCategory = $video['video_category'] 
-                    ?? $video['metadata']['video_category'] 
-                    ?? 'N/A';
-                
-                // Extract wp_post_id
-                $wpPostId = $video['wp_post_id'] 
-                    ?? $video['metadata']['wp_post_id'] 
-                    ?? null;
+                // Fetch individual video details to get thumbnail and audio URLs
+                if ($videoId) {
+                    try {
+                        $videoDetails = $api->getVideoById($videoId);
+                        $videoData = $videoDetails['video'] ?? $videoDetails;
+                        
+                        // Get jwp_id for thumbnail construction
+                        $jwpId = $videoData['jwp_id'] ?? null;
+                        
+                        // Construct thumbnail URL from JWPlayer CDN if jwp_id exists
+                        // Pattern: https://cdn.jwplayer.com/v2/media/{jwp_id}/thumbnails/{thumbnail_id}.jpg
+                        // We'll try the common thumbnail ID pattern
+                        if ($jwpId) {
+                            // Try common thumbnail patterns
+                            $thumbnailPatterns = [
+                                "https://cdn.jwplayer.com/v2/media/{$jwpId}/thumbnails/c4nIRcPM.jpg",
+                                "https://cdn.jwplayer.com/v2/media/{$jwpId}/thumbnails/{$jwpId}.jpg",
+                            ];
+                            
+                            // Check first pattern (most common)
+                            $thumbnail = $thumbnailPatterns[0];
+                        } else {
+                            $thumbnail = null;
+                        }
+                        
+                        // Extract audio from audio_previews
+                        $audioPreviews = $videoDetails['audio_previews'] ?? [];
+                        if (!empty($audioPreviews) && is_array($audioPreviews)) {
+                            $firstAudio = $audioPreviews[0];
+                            $audioFile = $firstAudio['s3_url'] ?? $firstAudio['url'] ?? null;
+                        }
+                        
+                        // Also check for video_category in details if not found in list
+                        if ($videoCategory === 'N/A' && isset($videoData['video_category'])) {
+                            $videoCategory = $videoData['video_category'];
+                        }
+                        
+                    } catch (\Exception $e) {
+                        Log::warning('Failed to fetch video details', [
+                            'video_id' => $videoId,
+                            'error' => $e->getMessage()
+                        ]);
+                        // Continue with null values
+                    }
+                }
                 
                 // Check if URLs exist
                 $thumbnailExists = $this->checkUrlExists($thumbnail);
                 $audioExists = $this->checkUrlExists($audioFile);
                 
                 $processedVideos[] = [
-                    'id' => $video['id'] ?? null,
+                    'id' => $videoId,
                     'wp_post_id' => $wpPostId,
-                    'title' => $video['title'] ?? 'Untitled',
+                    'title' => $title,
                     'video_category' => $videoCategory,
                     'thumbnail' => $thumbnail,
                     'thumbnail_exists' => $thumbnailExists,
                     'audio_file' => $audioFile,
                     'audio_exists' => $audioExists,
                 ];
+                
+                // Log progress every 50 videos
+                if (($index + 1) % 50 === 0) {
+                    Log::info('Processing videos database', [
+                        'progress' => ($index + 1) . '/' . $totalVideos
+                    ]);
+                }
             }
 
             // Sort by wp_post_id
