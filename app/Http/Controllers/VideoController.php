@@ -168,4 +168,120 @@ class VideoController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Display all videos from database with URL validation
+     */
+    public function database(Request $request)
+    {
+        try {
+            $api = $this->getApiService();
+
+            // Get all videos (with high limit)
+            $filters = [
+                'limit' => 10000, // Get all videos
+                'offset' => 0,
+            ];
+
+            $response = $api->getVideos($filters);
+            
+            // API returns a direct array of videos, not wrapped in 'videos' key
+            if (isset($response['videos'])) {
+                $videos = $response['videos'];
+            } else {
+                $videos = $response;
+            }
+
+            // Process videos and check URLs
+            $processedVideos = [];
+            foreach ($videos as $video) {
+                // Extract thumbnail - check multiple possible locations
+                $thumbnail = $video['thumbnail'] 
+                    ?? $video['metadata']['thumbnail'] 
+                    ?? $video['metadata']['details_thumbnail'] 
+                    ?? null;
+                
+                // Extract audio file - check multiple possible locations
+                $audioFile = $video['audio_file'] 
+                    ?? $video['metadata']['audio_file'] 
+                    ?? null;
+                
+                // Extract video category - check multiple possible locations
+                $videoCategory = $video['video_category'] 
+                    ?? $video['metadata']['video_category'] 
+                    ?? 'N/A';
+                
+                // Extract wp_post_id
+                $wpPostId = $video['wp_post_id'] 
+                    ?? $video['metadata']['wp_post_id'] 
+                    ?? null;
+                
+                // Check if URLs exist
+                $thumbnailExists = $this->checkUrlExists($thumbnail);
+                $audioExists = $this->checkUrlExists($audioFile);
+                
+                $processedVideos[] = [
+                    'id' => $video['id'] ?? null,
+                    'wp_post_id' => $wpPostId,
+                    'title' => $video['title'] ?? 'Untitled',
+                    'video_category' => $videoCategory,
+                    'thumbnail' => $thumbnail,
+                    'thumbnail_exists' => $thumbnailExists,
+                    'audio_file' => $audioFile,
+                    'audio_exists' => $audioExists,
+                ];
+            }
+
+            // Sort by wp_post_id
+            usort($processedVideos, function($a, $b) {
+                return ($a['wp_post_id'] ?? 0) <=> ($b['wp_post_id'] ?? 0);
+            });
+
+            return view('videos.database', [
+                'videos' => $processedVideos,
+                'total' => count($processedVideos),
+                'thumbnail_valid' => count(array_filter($processedVideos, fn($v) => $v['thumbnail_exists'])),
+                'audio_valid' => count(array_filter($processedVideos, fn($v) => $v['audio_exists'])),
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Failed to load videos database', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return view('videos.database', [
+                'videos' => [],
+                'total' => 0,
+                'thumbnail_valid' => 0,
+                'audio_valid' => 0,
+                'error' => 'Unable to load videos: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    /**
+     * Check if a URL exists (returns HTTP 200)
+     */
+    private function checkUrlExists(?string $url): bool
+    {
+        if (empty($url)) {
+            return false;
+        }
+
+        try {
+            $ch = curl_init($url);
+            curl_setopt($ch, CURLOPT_NOBODY, true);
+            curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+            curl_setopt($ch, CURLOPT_TIMEOUT, 5);
+            curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+            curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            return $httpCode >= 200 && $httpCode < 400;
+        } catch (\Exception $e) {
+            return false;
+        }
+    }
 }

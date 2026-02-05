@@ -22,6 +22,7 @@ Route::middleware(['auth'])->group(function () {
     
     // Videos
     Route::get('/videos', [App\Http\Controllers\VideoController::class, 'index'])->name('videos.index');
+    Route::get('/videos/database', [App\Http\Controllers\VideoController::class, 'database'])->name('videos.database');
     Route::get('/videos/{id}', [App\Http\Controllers\VideoController::class, 'show'])->name('videos.show');
     
     // Analytics
