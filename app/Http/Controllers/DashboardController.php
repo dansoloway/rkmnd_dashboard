@@ -24,13 +24,21 @@ class DashboardController extends Controller
             $tenantInfo = $api->getTenantInfo();
             $quota = $api->getTenantQuota();
 
-            // Get recent videos (latest 6)
-            $recentVideos = $api->getVideos([
-                'limit' => 6,
-                'offset' => 0,
-                'sort_by' => 'created_at',
-                'sort_order' => 'desc'
+            // Get recent videos - clear cache and don't sort to show all videos
+            // This ensures newly synced videos appear on dashboard
+            $api->clearEndpointCache('/api/v1/wordpress/videos', [
+                'limit' => 20,
+                'offset' => 0
             ]);
+            
+            // Get videos without sorting to show all (newly synced videos will be included)
+            $allVideos = $api->getVideos([
+                'limit' => 20,
+                'offset' => 0
+            ]);
+            
+            // Take first 6 for display (or all if less than 6)
+            $recentVideos = is_array($allVideos) ? array_slice($allVideos, 0, 6) : [];
 
             // Get latest sync log to show sync status
             $syncLogs = [];
