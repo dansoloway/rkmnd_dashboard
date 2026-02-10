@@ -169,22 +169,46 @@
         
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             @foreach(array_slice($recentVideos, 0, 6) as $video)
-                <a href="{{ route('videos.show', $video['id']) }}" class="block border border-gray-200 rounded-lg p-4 hover:border-blue-500 hover:shadow-md transition">
-                    <div class="flex items-start justify-between mb-2">
-                        <h3 class="font-medium text-gray-900 line-clamp-2 flex-1">
-                            {{ $video['title'] }}
-                        </h3>
-                        @if(!empty($video['post_type']))
-                            <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{ $video['post_type'] === 'scheduled' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800' }}">
-                                {{ ucfirst($video['post_type']) }}
-                            </span>
+                <a href="{{ route('videos.show', $video['id']) }}" class="block border border-gray-200 rounded-lg overflow-hidden hover:border-blue-500 hover:shadow-md transition">
+                    <!-- Thumbnail -->
+                    <div class="w-full h-48 bg-gray-200 relative">
+                        @if(!empty($video['thumbnail']))
+                            <img 
+                                src="{{ $video['thumbnail'] }}" 
+                                alt="{{ $video['title'] }}"
+                                class="w-full h-full object-cover"
+                                onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+                            >
+                        @endif
+                        <div class="w-full h-full flex items-center justify-center {{ !empty($video['thumbnail']) ? 'hidden' : '' }}" style="{{ !empty($video['thumbnail']) ? 'display: none;' : '' }}">
+                            <svg class="h-16 w-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                            </svg>
+                        </div>
+                        @if(empty($video['thumbnail']))
+                            <div class="absolute top-2 right-2 bg-red-500 text-white text-xs px-2 py-1 rounded">
+                                No Thumbnail
+                            </div>
                         @endif
                     </div>
-                    <div class="flex items-center justify-between text-sm text-gray-500">
-                        <span>{{ $video['instructor'] ?? 'Unknown' }}</span>
-                        @if($video['has_audio_preview'] ?? false)
-                            <span class="text-green-600">🎵</span>
-                        @endif
+                    <!-- Video Info -->
+                    <div class="p-4">
+                        <div class="flex items-start justify-between mb-2">
+                            <h3 class="font-medium text-gray-900 line-clamp-2 flex-1">
+                                {{ $video['title'] }}
+                            </h3>
+                            @if(!empty($video['post_type']))
+                                <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{ $video['post_type'] === 'scheduled' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800' }}">
+                                    {{ ucfirst($video['post_type']) }}
+                                </span>
+                            @endif
+                        </div>
+                        <div class="flex items-center justify-between text-sm text-gray-500">
+                            <span>{{ $video['instructor'] ?? 'Unknown' }}</span>
+                            @if($video['has_audio_preview'] ?? false)
+                                <span class="text-green-600">🎵</span>
+                            @endif
+                        </div>
                     </div>
                 </a>
             @endforeach

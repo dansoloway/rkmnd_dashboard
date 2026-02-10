@@ -42,7 +42,33 @@ class DashboardController extends Controller
             ]);
             
             // Take first 6 for display (most recently updated/synced)
-            $recentVideos = is_array($allVideos) ? array_slice($allVideos, 0, 6) : [];
+            $recentVideosRaw = is_array($allVideos) ? array_slice($allVideos, 0, 6) : [];
+            
+            // Fetch thumbnails for each video
+            $recentVideos = [];
+            foreach ($recentVideosRaw as $video) {
+                $videoId = $video['id'] ?? null;
+                $thumbnail = null;
+                
+                // Try to get thumbnail from video details
+                if ($videoId) {
+                    try {
+                        $videoDetails = $api->getVideoById($videoId);
+                        $videoData = $videoDetails['video'] ?? $videoDetails;
+                        $jwpId = $videoData['jwp_id'] ?? null;
+                        
+                        // Construct thumbnail URL from JWPlayer CDN
+                        if ($jwpId) {
+                            $thumbnail = "https://cdn.jwplayer.com/v2/media/{$jwpId}/thumbnails/c4nIRcPM.jpg";
+                        }
+                    } catch (\Exception $e) {
+                        // Silently fail - thumbnail will remain null
+                    }
+                }
+                
+                $video['thumbnail'] = $thumbnail;
+                $recentVideos[] = $video;
+            }
 
             // Get latest sync log to show sync status
             $syncLogs = [];
