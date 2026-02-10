@@ -167,6 +167,16 @@
             </a>
         </div>
         
+        <!-- Debug Info (temporary) -->
+        @if(config('app.debug'))
+        <div class="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded text-xs">
+            <strong>Debug:</strong> 
+            @foreach($recentVideos as $v)
+                Video {{ $v['id'] ?? 'N/A' }}: jwp_id={{ $v['jwp_id'] ?? 'NULL' }}, thumbnail={{ !empty($v['thumbnail']) ? 'SET' : 'NULL' }}<br>
+            @endforeach
+        </div>
+        @endif
+        
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             @foreach(array_slice($recentVideos, 0, 6) as $video)
                 <a href="{{ route('videos.show', $video['id']) }}" class="block border border-gray-200 rounded-lg overflow-hidden hover:border-blue-500 hover:shadow-md transition">
@@ -195,6 +205,9 @@
                         @if(empty($video['thumbnail']))
                             <div class="absolute top-2 right-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full font-medium">
                                 No Thumbnail
+                            </div>
+                            <div class="absolute bottom-2 left-2 bg-black bg-opacity-75 text-white text-xs px-2 py-1 rounded">
+                                Debug: jwp_id={{ $video['jwp_id'] ?? 'NULL' }}
                             </div>
                         @endif
                     </div>
