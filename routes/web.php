@@ -25,6 +25,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/videos/database', [App\Http\Controllers\VideoController::class, 'database'])->name('videos.database');
     Route::get('/videos/{id}', [App\Http\Controllers\VideoController::class, 'show'])->name('videos.show');
     
+    // Query AI Pipeline
+    Route::get('/query', [App\Http\Controllers\QueryController::class, 'index'])->name('query.index');
+    
     // Analytics
     Route::get('/analytics', [App\Http\Controllers\AnalyticsController::class, 'index'])->name('analytics.index');
     
