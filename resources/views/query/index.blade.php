@@ -7,7 +7,18 @@
         <div>
             <h1 class="text-3xl font-heading font-bold text-gray-900">AI Pipeline Database Query</h1>
             <p class="mt-2 text-gray-600">Query and explore videos in the AI Pipeline database</p>
-            <p class="mt-1 text-sm text-gray-500">Total: <strong>{{ $total }}</strong> videos found</p>
+            <div class="mt-2 flex gap-4 text-sm">
+                <p class="text-gray-700">
+                    <span class="font-semibold">Total in Database:</span> 
+                    <strong class="text-blue-600">{{ number_format($totalInDatabase ?? 0) }}</strong> videos
+                </p>
+                @if(count($filters) > 2) {{-- More than just limit and offset --}}
+                    <p class="text-gray-500">
+                        <span class="font-medium">Filtered Results:</span> 
+                        <strong>{{ number_format($total) }}</strong> videos
+                    </p>
+                @endif
+            </div>
         </div>
     </div>
 

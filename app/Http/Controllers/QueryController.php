@@ -46,10 +46,11 @@ class QueryController extends Controller
                 $total = count($videos);
             }
 
-            // Get stats for filters
+            // Get stats for filters and total count
             $stats = $api->getWordPressStats();
             $categories = $stats['categories'] ?? [];
             $instructors = $stats['instructors'] ?? [];
+            $totalInDatabase = $stats['stats']['total_videos'] ?? 0;
 
             // Calculate pagination
             $perPage = $filters['limit'] ?? 50;
@@ -59,6 +60,7 @@ class QueryController extends Controller
             return view('query.index', compact(
                 'videos',
                 'total',
+                'totalInDatabase',
                 'categories',
                 'instructors',
                 'currentPage',
@@ -75,6 +77,7 @@ class QueryController extends Controller
             return view('query.index', [
                 'videos' => [],
                 'total' => 0,
+                'totalInDatabase' => 0,
                 'categories' => [],
                 'instructors' => [],
                 'currentPage' => 1,
