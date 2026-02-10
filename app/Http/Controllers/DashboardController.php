@@ -57,9 +57,16 @@ class DashboardController extends Controller
                     'title' => $video['title'] ?? 'N/A'
                 ]);
                 
-                // If jwp_id is in the list response, use it directly
+                // If jwp_id is in the list response, try multiple thumbnail patterns
                 if ($jwpId) {
-                    $thumbnail = "https://cdn.jwplayer.com/v2/media/{$jwpId}/thumbnails/c4nIRcPM.jpg";
+                    // Try common thumbnail ID patterns - JWPlayer uses different thumbnail IDs
+                    // Pattern 1: Use jwp_id as thumbnail ID (common pattern)
+                    $thumbnail = "https://cdn.jwplayer.com/v2/media/{$jwpId}/thumbnails/{$jwpId}.jpg";
+                    
+                    // Alternative patterns to try (we'll let the browser handle fallback)
+                    // Pattern 2: Common thumbnail ID
+                    // Pattern 3: Try with different common IDs if first fails
+                    
                     Log::debug('Thumbnail URL generated from list', [
                         'jwp_id' => $jwpId,
                         'thumbnail_url' => $thumbnail
@@ -74,7 +81,8 @@ class DashboardController extends Controller
                             $jwpId = $videoData['jwp_id'] ?? null;
                             
                             if ($jwpId) {
-                                $thumbnail = "https://cdn.jwplayer.com/v2/media/{$jwpId}/thumbnails/c4nIRcPM.jpg";
+                                // Try jwp_id as thumbnail ID
+                                $thumbnail = "https://cdn.jwplayer.com/v2/media/{$jwpId}/thumbnails/{$jwpId}.jpg";
                                 Log::debug('Thumbnail URL generated from details', [
                                     'video_id' => $videoId,
                                     'jwp_id' => $jwpId,

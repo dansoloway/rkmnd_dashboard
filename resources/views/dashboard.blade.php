@@ -172,7 +172,7 @@
         <div class="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded text-xs">
             <strong>Debug:</strong> 
             @foreach($recentVideos as $v)
-                Video {{ $v['id'] ?? 'N/A' }}: jwp_id={{ $v['jwp_id'] ?? 'NULL' }}, thumbnail={{ !empty($v['thumbnail']) ? 'SET' : 'NULL' }}<br>
+                Video {{ $v['id'] ?? 'N/A' }}: jwp_id={{ $v['jwp_id'] ?? 'NULL' }}, thumbnail={{ !empty($v['thumbnail']) ? 'SET: ' . $v['thumbnail'] : 'NULL' }}<br>
             @endforeach
         </div>
         @endif
@@ -183,12 +183,42 @@
                     <!-- Thumbnail -->
                     <div class="w-full h-48 bg-gray-200 relative overflow-hidden">
                         @if(!empty($video['thumbnail']))
+                            @php
+                                // Try multiple thumbnail URL patterns
+                                $jwpId = $video['jwp_id'] ?? null;
+                                $thumbnailUrls = [];
+                                if ($jwpId) {
+                                    // Pattern 1: jwp_id as thumbnail ID
+                                    $thumbnailUrls[] = "https://cdn.jwplayer.com/v2/media/{$jwpId}/thumbnails/{$jwpId}.jpg";
+                                    // Pattern 2: Common thumbnail ID
+                                    $thumbnailUrls[] = "https://cdn.jwplayer.com/v2/media/{$jwpId}/thumbnails/c4nIRcPM.jpg";
+                                    // Pattern 3: Alternative common pattern
+                                    $thumbnailUrls[] = "https://cdn.jwplayer.com/v2/media/{$jwpId}/thumbnails/default.jpg";
+                                }
+                                // Use the first one as primary, others as fallbacks
+                                $primaryThumbnail = $video['thumbnail'];
+                            @endphp
                             <img 
-                                src="{{ $video['thumbnail'] }}" 
+                                src="{{ $primaryThumbnail }}" 
                                 alt="{{ $video['title'] }}"
                                 class="w-full h-full object-cover"
-                                title="Thumbnail: {{ $video['thumbnail'] }}"
-                                onerror="console.error('Thumbnail failed to load:', '{{ $video['thumbnail'] }}'); this.style.display='none'; document.getElementById('placeholder-{{ $video['id'] }}').style.display='flex';"
+                                title="Thumbnail: {{ $primaryThumbnail }}"
+                                data-fallback-urls="{{ json_encode($thumbnailUrls) }}"
+                                onload="console.log('Thumbnail loaded:', '{{ $primaryThumbnail }}');"
+                                onerror="
+                                    console.error('Thumbnail FAILED:', '{{ $primaryThumbnail }}');
+                                    var fallbacks = {{ json_encode($thumbnailUrls) }};
+                                    var currentSrc = this.src;
+                                    var currentIndex = fallbacks.indexOf(currentSrc);
+                                    if (currentIndex < fallbacks.length - 1) {
+                                        this.src = fallbacks[currentIndex + 1];
+                                        console.log('Trying fallback:', fallbacks[currentIndex + 1]);
+                                    } else {
+                                        console.error('All thumbnail URLs failed');
+                                        this.style.display='none';
+                                        document.getElementById('placeholder-{{ $video['id'] }}').style.display='flex';
+                                    }
+                                "
                             >
                         @endif
                         <div class="w-full h-full {{ !empty($video['thumbnail']) ? 'hidden' : 'flex' }} items-center justify-center bg-gray-200" id="placeholder-{{ $video['id'] }}">
