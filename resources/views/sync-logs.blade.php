@@ -304,6 +304,43 @@ function toggleError(errorId) {
         errorRow.classList.toggle('hidden');
     }
 }
+
+// Auto-refresh page if there's a sync in progress
+(function() {
+    @if(!empty($logs))
+        // Check if latest sync is still running
+        const latestLog = @json($logs[0] ?? null);
+        if (latestLog && (latestLog.status === 'started' || latestLog.status === 'processing')) {
+            // Refresh every 5 seconds while sync is running
+            let refreshCount = 0;
+            const maxRefreshes = 120; // Max 10 minutes (120 * 5 seconds)
+            
+            const refreshInterval = setInterval(function() {
+                refreshCount++;
+                
+                // Stop refreshing after max time or if page is hidden
+                if (refreshCount >= maxRefreshes || document.hidden) {
+                    clearInterval(refreshInterval);
+                    return;
+                }
+                
+                // Refresh the page
+                window.location.reload();
+            }, 5000); // Refresh every 5 seconds
+            
+            // Show refresh indicator
+            const refreshIndicator = document.createElement('div');
+            refreshIndicator.className = 'fixed bottom-4 right-4 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg z-50 flex items-center gap-2';
+            refreshIndicator.innerHTML = '<span class="animate-spin">🔄</span> <span>Sync in progress - Auto-refreshing...</span>';
+            document.body.appendChild(refreshIndicator);
+            
+            // Clean up on page unload
+            window.addEventListener('beforeunload', function() {
+                clearInterval(refreshInterval);
+            });
+        }
+    @endif
+})();
 </script>
 @endpush
 @endsection

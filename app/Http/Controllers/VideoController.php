@@ -211,23 +211,12 @@ class VideoController extends Controller
                         $videoDetails = $api->getVideoById($videoId);
                         $videoData = $videoDetails['video'] ?? $videoDetails;
                         
-                        // Get jwp_id for thumbnail construction
-                        $jwpId = $videoData['jwp_id'] ?? null;
+                        // Get thumbnail URL from API response, or fallback to fetching from WordPress
+                        $thumbnail = $videoData['thumbnail_url'] ?? null;
                         
-                        // Construct thumbnail URL from JWPlayer CDN if jwp_id exists
-                        // Pattern: https://cdn.jwplayer.com/v2/media/{jwp_id}/thumbnails/{thumbnail_id}.jpg
-                        // We'll try the common thumbnail ID pattern
-                        if ($jwpId) {
-                            // Try common thumbnail patterns
-                            $thumbnailPatterns = [
-                                "https://cdn.jwplayer.com/v2/media/{$jwpId}/thumbnails/c4nIRcPM.jpg",
-                                "https://cdn.jwplayer.com/v2/media/{$jwpId}/thumbnails/{$jwpId}.jpg",
-                            ];
-                            
-                            // Check first pattern (most common)
-                            $thumbnail = $thumbnailPatterns[0];
-                        } else {
-                            $thumbnail = null;
+                        if (!$thumbnail && $wpPostId) {
+                            // Fallback: try to fetch from WordPress REST API
+                            $thumbnail = $this->getWordPressThumbnailUrl($wpPostId, $title);
                         }
                         
                         // Extract audio from audio_previews
@@ -325,5 +314,93 @@ class VideoController extends Controller
         } catch (\Exception $e) {
             return false;
         }
+    }
+
+    /**
+     * Get WordPress thumbnail URL for a video post
+     * WordPress stores thumbnails in wp-content/uploads/{year}/{month}/{filename}
+     */
+    protected function getWordPressThumbnailUrl(?int $wpPostId, string $title = ''): ?string
+    {
+        if (!$wpPostId) {
+            return null;
+        }
+
+        // Try WordPress REST API first (if available)
+        // WordPress custom post types might use different endpoints
+        $wpRestUrl = config('wordpress.rest_api_url', 'https://www.tuneupfitness.com/wp-json/wp/v2');
+        
+        try {
+            // Try 'videos' endpoint first (plural)
+            $response = \Illuminate\Support\Facades\Http::timeout(3)
+                ->get("{$wpRestUrl}/videos/{$wpPostId}", [
+                    '_fields' => 'id,featured_media'
+                ]);
+            
+            // If that fails, try 'video' (singular) or 'posts'
+            if (!$response->successful()) {
+                $response = \Illuminate\Support\Facades\Http::timeout(3)
+                    ->get("{$wpRestUrl}/video/{$wpPostId}", [
+                        '_fields' => 'id,featured_media'
+                    ]);
+            }
+            
+            if (!$response->successful()) {
+                $response = \Illuminate\Support\Facades\Http::timeout(3)
+                    ->get("{$wpRestUrl}/posts/{$wpPostId}", [
+                        '_fields' => 'id,featured_media'
+                    ]);
+            }
+            
+            if ($response->successful()) {
+                $data = $response->json();
+                $featuredMediaId = $data['featured_media'] ?? null;
+                
+                if ($featuredMediaId && $featuredMediaId > 0) {
+                    // Get attachment URL
+                    $mediaResponse = \Illuminate\Support\Facades\Http::timeout(3)
+                        ->get("{$wpRestUrl}/media/{$featuredMediaId}", [
+                            '_fields' => 'source_url'
+                        ]);
+                    
+                    if ($mediaResponse->successful()) {
+                        $mediaData = $mediaResponse->json();
+                        $thumbnailUrl = $mediaData['source_url'] ?? null;
+                        
+                        if ($thumbnailUrl) {
+                            Log::debug('Got thumbnail from WordPress REST API', [
+                                'wp_post_id' => $wpPostId,
+                                'featured_media_id' => $featuredMediaId,
+                                'thumbnail_url' => $thumbnailUrl
+                            ]);
+                            return $thumbnailUrl;
+                        }
+                    }
+                }
+            }
+        } catch (\Exception $e) {
+            Log::debug('WordPress REST API not available, trying URL construction', [
+                'wp_post_id' => $wpPostId,
+                'error' => $e->getMessage()
+            ]);
+        }
+
+        // Fallback: Construct most likely URL pattern
+        // Pattern: https://www.tuneupfitness.com/wp-content/uploads/{year}/{month}/{slug}-{size}.webp
+        // Based on user's example: .../Armpit_Rollout_A_Secret_Source_of_Shoulder_Pain-copy-457x257.webp
+        $baseUrl = 'https://www.tuneupfitness.com/wp-content/uploads';
+        $currentYear = date('Y');
+        $currentMonth = date('m');
+        
+        // Generate slug from title (matching WordPress pattern)
+        $slug = strtolower($title);
+        $slug = preg_replace('/[^a-z0-9]+/', '_', $slug); // WordPress uses underscores in filenames
+        $slug = trim($slug, '_');
+        
+        // Try most common pattern: {slug}-copy-457x257.webp (based on user's example)
+        $url = "{$baseUrl}/{$currentYear}/{$currentMonth}/{$slug}-copy-457x257.webp";
+        
+        // Return the most likely URL (browser will handle 404 if wrong)
+        return $url;
     }
 }
