@@ -44,25 +44,33 @@ class DashboardController extends Controller
             // Take first 6 for display (most recently updated/synced)
             $recentVideosRaw = is_array($allVideos) ? array_slice($allVideos, 0, 6) : [];
             
-            // Fetch thumbnails for each video
+            // Add thumbnails to videos - use jwp_id from list if available, otherwise fetch details
             $recentVideos = [];
             foreach ($recentVideosRaw as $video) {
-                $videoId = $video['id'] ?? null;
                 $thumbnail = null;
+                $jwpId = $video['jwp_id'] ?? null;
                 
-                // Try to get thumbnail from video details
-                if ($videoId) {
-                    try {
-                        $videoDetails = $api->getVideoById($videoId);
-                        $videoData = $videoDetails['video'] ?? $videoDetails;
-                        $jwpId = $videoData['jwp_id'] ?? null;
-                        
-                        // Construct thumbnail URL from JWPlayer CDN
-                        if ($jwpId) {
-                            $thumbnail = "https://cdn.jwplayer.com/v2/media/{$jwpId}/thumbnails/c4nIRcPM.jpg";
+                // If jwp_id is in the list response, use it directly
+                if ($jwpId) {
+                    $thumbnail = "https://cdn.jwplayer.com/v2/media/{$jwpId}/thumbnails/c4nIRcPM.jpg";
+                } else {
+                    // Fallback: fetch video details to get jwp_id
+                    $videoId = $video['id'] ?? null;
+                    if ($videoId) {
+                        try {
+                            $videoDetails = $api->getVideoById($videoId);
+                            $videoData = $videoDetails['video'] ?? $videoDetails;
+                            $jwpId = $videoData['jwp_id'] ?? null;
+                            
+                            if ($jwpId) {
+                                $thumbnail = "https://cdn.jwplayer.com/v2/media/{$jwpId}/thumbnails/c4nIRcPM.jpg";
+                            }
+                        } catch (\Exception $e) {
+                            Log::debug('Failed to fetch thumbnail for video', [
+                                'video_id' => $videoId,
+                                'error' => $e->getMessage()
+                            ]);
                         }
-                    } catch (\Exception $e) {
-                        // Silently fail - thumbnail will remain null
                     }
                 }
                 
