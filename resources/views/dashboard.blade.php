@@ -36,6 +36,60 @@
         @endif
     </div>
 
+    <!-- Sync Status Alert -->
+    @if(!empty($latestSync))
+        <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 {{ $latestSync['status'] === 'completed' ? 'border-green-500' : ($latestSync['status'] === 'failed' ? 'border-red-500' : 'border-yellow-500') }}">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 class="text-lg font-heading font-semibold text-gray-900 mb-1">
+                        Last Sync: {{ \Carbon\Carbon::parse($latestSync['started_at'])->diffForHumans() }}
+                    </h3>
+                    <p class="text-sm text-gray-600">
+                        Found <strong>{{ number_format($latestSync['total_videos_found'] ?? 0) }}</strong> videos | 
+                        Added <strong class="text-green-600">+{{ number_format($latestSync['new_videos_added'] ?? 0) }}</strong> | 
+                        Updated <strong class="text-blue-600">{{ number_format($latestSync['videos_updated'] ?? 0) }}</strong>
+                        @if(($latestSync['errors_encountered'] ?? 0) > 0)
+                            | <strong class="text-red-600">{{ $latestSync['errors_encountered'] }} errors</strong>
+                        @endif
+                    </p>
+                    <p class="text-xs text-gray-500 mt-1">
+                        {{ \Carbon\Carbon::parse($latestSync['started_at'])->format('M d, Y g:i A') }}
+                    </p>
+                </div>
+                <div class="flex gap-2">
+                    <a href="{{ route('sync-logs.index') }}" class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+                        View Logs
+                    </a>
+                    <form method="POST" action="{{ route('sync-logs.trigger') }}" class="inline" onsubmit="return confirm('This will start a new sync from WordPress. Continue?');">
+                        @csrf
+                        <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-blue-700 rounded-md hover:bg-blue-700">
+                            🔄 Sync Now
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    @else
+        <div class="bg-yellow-50 border-l-4 border-yellow-400 rounded-lg p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 class="text-lg font-heading font-semibold text-yellow-900 mb-1">
+                        No Sync History Found
+                    </h3>
+                    <p class="text-sm text-yellow-700">
+                        Trigger a sync to pull videos from WordPress production database.
+                    </p>
+                </div>
+                <form method="POST" action="{{ route('sync-logs.trigger') }}" class="inline" onsubmit="return confirm('This will start a new sync from WordPress. Continue?');">
+                    @csrf
+                    <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-blue-700 rounded-md hover:bg-blue-700">
+                        🔄 Trigger Sync
+                    </button>
+                </form>
+            </div>
+        </div>
+    @endif
+
     <!-- Quick Stats -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         <!-- Videos Card -->

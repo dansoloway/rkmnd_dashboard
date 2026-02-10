@@ -32,11 +32,23 @@ class DashboardController extends Controller
                 'sort_order' => 'desc'
             ]);
 
+            // Get latest sync log to show sync status
+            $syncLogs = [];
+            try {
+                $syncLogsResponse = $api->getSyncLogs(1); // Get just the latest one
+                $syncLogs = $syncLogsResponse['logs'] ?? [];
+            } catch (\Exception $e) {
+                Log::warning('Failed to get sync logs for dashboard', [
+                    'error' => $e->getMessage()
+                ]);
+            }
+
             return view('dashboard', [
                 'stats' => $stats['stats'] ?? [],
                 'tenant' => $tenantInfo,
                 'quota' => $quota,
-                'recentVideos' => $recentVideos
+                'recentVideos' => $recentVideos,
+                'latestSync' => !empty($syncLogs) ? $syncLogs[0] : null
             ]);
 
         } catch (\Exception $e) {
