@@ -177,13 +177,20 @@
                                 src="{{ $video['thumbnail'] }}" 
                                 alt="{{ $video['title'] }}"
                                 class="w-full h-full object-cover"
-                                onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+                                title="Thumbnail: {{ $video['thumbnail'] }}"
+                                onerror="console.error('Thumbnail failed to load:', '{{ $video['thumbnail'] }}'); this.style.display='none'; document.getElementById('placeholder-{{ $video['id'] }}').style.display='flex';"
                             >
                         @endif
                         <div class="w-full h-full {{ !empty($video['thumbnail']) ? 'hidden' : 'flex' }} items-center justify-center bg-gray-200" id="placeholder-{{ $video['id'] }}">
-                            <svg class="h-16 w-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
-                            </svg>
+                            <div class="text-center">
+                                <svg class="h-16 w-16 text-gray-400 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                                </svg>
+                                @if(empty($video['thumbnail']))
+                                    <p class="text-xs text-gray-500 mt-2">No thumbnail URL</p>
+                                    <p class="text-xs text-gray-400 mt-1">JWP ID: {{ $video['jwp_id'] ?? 'N/A' }}</p>
+                                @endif
+                            </div>
                         </div>
                         @if(empty($video['thumbnail']))
                             <div class="absolute top-2 right-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full font-medium">

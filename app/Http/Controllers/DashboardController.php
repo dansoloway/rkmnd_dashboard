@@ -50,9 +50,20 @@ class DashboardController extends Controller
                 $thumbnail = null;
                 $jwpId = $video['jwp_id'] ?? null;
                 
+                // Log for debugging
+                Log::debug('Processing video for thumbnail', [
+                    'video_id' => $video['id'] ?? null,
+                    'jwp_id_from_list' => $jwpId,
+                    'title' => $video['title'] ?? 'N/A'
+                ]);
+                
                 // If jwp_id is in the list response, use it directly
                 if ($jwpId) {
                     $thumbnail = "https://cdn.jwplayer.com/v2/media/{$jwpId}/thumbnails/c4nIRcPM.jpg";
+                    Log::debug('Thumbnail URL generated from list', [
+                        'jwp_id' => $jwpId,
+                        'thumbnail_url' => $thumbnail
+                    ]);
                 } else {
                     // Fallback: fetch video details to get jwp_id
                     $videoId = $video['id'] ?? null;
@@ -64,9 +75,19 @@ class DashboardController extends Controller
                             
                             if ($jwpId) {
                                 $thumbnail = "https://cdn.jwplayer.com/v2/media/{$jwpId}/thumbnails/c4nIRcPM.jpg";
+                                Log::debug('Thumbnail URL generated from details', [
+                                    'video_id' => $videoId,
+                                    'jwp_id' => $jwpId,
+                                    'thumbnail_url' => $thumbnail
+                                ]);
+                            } else {
+                                Log::debug('No jwp_id found in video details', [
+                                    'video_id' => $videoId,
+                                    'video_data_keys' => array_keys($videoData)
+                                ]);
                             }
                         } catch (\Exception $e) {
-                            Log::debug('Failed to fetch thumbnail for video', [
+                            Log::warning('Failed to fetch thumbnail for video', [
                                 'video_id' => $videoId,
                                 'error' => $e->getMessage()
                             ]);
