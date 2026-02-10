@@ -290,22 +290,6 @@
                                         </div>
                                     </div>
                                 @endif
-                                
-                                <!-- Audio Player -->
-                                @if($audioUrl)
-                                    <div class="mt-3 pt-3 border-t border-gray-200">
-                                        <span class="text-gray-500 block mb-2">Audio Preview:</span>
-                                        <audio controls class="w-full">
-                                            <source src="{{ $audioUrl }}" type="audio/mpeg">
-                                            Your browser does not support the audio element.
-                                        </audio>
-                                        <p class="text-xs text-gray-500 mt-1">
-                                            <a href="{{ $audioUrl }}" target="_blank" class="text-blue-600 hover:text-blue-700">
-                                                🔗 Direct Link
-                                            </a>
-                                        </p>
-                                    </div>
-                                @endif
                             </div>
                         @endforeach
                     </div>
