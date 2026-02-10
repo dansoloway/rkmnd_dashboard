@@ -171,7 +171,7 @@
             @foreach(array_slice($recentVideos, 0, 6) as $video)
                 <a href="{{ route('videos.show', $video['id']) }}" class="block border border-gray-200 rounded-lg overflow-hidden hover:border-blue-500 hover:shadow-md transition">
                     <!-- Thumbnail -->
-                    <div class="w-full h-48 bg-gray-200 relative">
+                    <div class="w-full h-48 bg-gray-200 relative overflow-hidden">
                         @if(!empty($video['thumbnail']))
                             <img 
                                 src="{{ $video['thumbnail'] }}" 
@@ -180,13 +180,13 @@
                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
                             >
                         @endif
-                        <div class="w-full h-full flex items-center justify-center {{ !empty($video['thumbnail']) ? 'hidden' : '' }}" style="{{ !empty($video['thumbnail']) ? 'display: none;' : '' }}">
+                        <div class="w-full h-full {{ !empty($video['thumbnail']) ? 'hidden' : 'flex' }} items-center justify-center bg-gray-200" id="placeholder-{{ $video['id'] }}">
                             <svg class="h-16 w-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
                             </svg>
                         </div>
                         @if(empty($video['thumbnail']))
-                            <div class="absolute top-2 right-2 bg-red-500 text-white text-xs px-2 py-1 rounded">
+                            <div class="absolute top-2 right-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full font-medium">
                                 No Thumbnail
                             </div>
                         @endif
