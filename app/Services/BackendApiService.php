@@ -155,11 +155,11 @@ class BackendApiService
 
     /**
      * Get WordPress stats (video count, categories, etc.)
-     * Cache: 10 minutes
+     * Cache: 2 minutes (reduced to allow faster updates)
      */
     public function getWordPressStats(): array
     {
-        return $this->makeRequest('get', '/api/v1/wordpress/stats', [], 600);
+        return $this->makeRequest('get', '/api/v1/wordpress/stats', [], 120);
     }
 
     /**

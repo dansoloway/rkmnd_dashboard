@@ -69,6 +69,15 @@ class VideoController extends Controller
             // Categories and instructors are at the top level of the response
             $categories = $statsResponse['categories'] ?? [];
             $instructors = $statsResponse['instructors'] ?? [];
+            
+            // Debug: Log if categories are missing
+            if (empty($categories)) {
+                Log::warning('No categories found in stats response', [
+                    'response_keys' => array_keys($statsResponse),
+                    'has_stats_key' => isset($statsResponse['stats']),
+                    'has_categories_key' => isset($statsResponse['categories'])
+                ]);
+            }
 
             // Calculate pagination
             $perPage = $filters['limit'];
