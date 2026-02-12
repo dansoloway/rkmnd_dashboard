@@ -65,9 +65,10 @@ class VideoController extends Controller
             }
 
             // Get stats for filters
-            $stats = $api->getWordPressStats();
-            $categories = $stats['categories'] ?? [];
-            $instructors = $stats['instructors'] ?? [];
+            $statsResponse = $api->getWordPressStats();
+            // Categories and instructors are at the top level of the response
+            $categories = $statsResponse['categories'] ?? [];
+            $instructors = $statsResponse['instructors'] ?? [];
 
             // Calculate pagination
             $perPage = $filters['limit'];
