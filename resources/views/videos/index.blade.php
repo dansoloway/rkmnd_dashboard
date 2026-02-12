@@ -13,7 +13,7 @@
     <!-- Filters & Search -->
     <div class="bg-white rounded-lg shadow-sm p-6">
         <form method="GET" action="{{ route('videos.index') }}" class="space-y-4">
-            <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-6 gap-4">
                 <!-- Search -->
                 <div class="md:col-span-2">
                     <label for="search" class="block text-sm font-medium text-gray-700 mb-1">Search</label>
@@ -52,6 +52,23 @@
                         <option value="">All Categories</option>
                         @foreach($categories as $category => $count)
                             <option value="{{ $category }}" {{ ($filters['category'] ?? '') === $category ? 'selected' : '' }}>
+                                {{ $category }} ({{ $count }})
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <!-- Category for AI Filter -->
+                <div>
+                    <label for="category_for_ai" class="block text-sm font-medium text-gray-700 mb-1">Category for AI</label>
+                    <select 
+                        id="category_for_ai" 
+                        name="category_for_ai" 
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    >
+                        <option value="">All AI Categories</option>
+                        @foreach($categories_for_ai ?? [] as $category => $count)
+                            <option value="{{ $category }}" {{ ($filters['category_for_ai'] ?? '') === $category ? 'selected' : '' }}>
                                 {{ $category }} ({{ $count }})
                             </option>
                         @endforeach

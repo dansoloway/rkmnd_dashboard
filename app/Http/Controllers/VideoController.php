@@ -37,6 +37,7 @@ class VideoController extends Controller
                 'limit' => $request->input('limit', 24),
                 'offset' => $request->input('offset', 0),
                 'category' => $request->input('category'),
+                'category_for_ai' => $request->input('category_for_ai'),
                 'difficulty' => $request->input('difficulty'),
                 'instructor' => $request->input('instructor'),
                 'search' => $request->input('search'),
@@ -68,6 +69,7 @@ class VideoController extends Controller
             $statsResponse = $api->getWordPressStats();
             // Categories and instructors are at the top level of the response
             $categories = $statsResponse['categories'] ?? [];
+            $categories_for_ai = $statsResponse['categories_for_ai'] ?? [];
             $instructors = $statsResponse['instructors'] ?? [];
             
             // Debug: Log if categories are missing
@@ -88,6 +90,7 @@ class VideoController extends Controller
                 'videos',
                 'total',
                 'categories',
+                'categories_for_ai',
                 'instructors',
                 'currentPage',
                 'totalPages',
@@ -103,6 +106,7 @@ class VideoController extends Controller
                 'videos' => [],
                 'total' => 0,
                 'categories' => [],
+                'categories_for_ai' => [],
                 'instructors' => [],
                 'currentPage' => 1,
                 'totalPages' => 1,
