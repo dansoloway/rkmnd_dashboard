@@ -24,6 +24,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/videos', [App\Http\Controllers\VideoController::class, 'index'])->name('videos.index');
     Route::get('/videos/database', [App\Http\Controllers\VideoController::class, 'database'])->name('videos.database');
     Route::get('/videos/{id}', [App\Http\Controllers\VideoController::class, 'show'])->name('videos.show');
+    Route::post('/videos/{id}/thumbnail', [App\Http\Controllers\VideoController::class, 'updateThumbnail'])->name('videos.update-thumbnail');
     
     // Query AI Pipeline
     Route::get('/query', [App\Http\Controllers\QueryController::class, 'index'])->name('query.index');

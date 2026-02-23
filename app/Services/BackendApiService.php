@@ -190,6 +190,32 @@ class BackendApiService
         ], 300);
     }
 
+    /**
+     * Update video thumbnail URL (manual override)
+     * Note: Will be overwritten on next WordPress sync
+     */
+    public function updateVideoThumbnail(int $videoId, string $thumbnailUrl): array
+    {
+        $response = Http::timeout($this->timeout)
+            ->withToken($this->apiKey)
+            ->asJson()
+            ->patch($this->baseUrl . "/api/v1/wordpress/videos/{$videoId}", [
+                'thumbnail_url' => $thumbnailUrl
+            ]);
+
+        if ($response->successful()) {
+            return $response->json();
+        }
+
+        Log::error('Backend API: update thumbnail failed', [
+            'video_id' => $videoId,
+            'status' => $response->status(),
+            'body' => $response->body()
+        ]);
+
+        throw new Exception("API request failed: {$response->status()}");
+    }
+
     // ==========================================
     // S3 / AUDIO PREVIEW ENDPOINTS
     // ==========================================

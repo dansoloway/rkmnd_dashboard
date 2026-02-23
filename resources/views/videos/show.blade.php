@@ -31,6 +31,18 @@
         </ol>
     </nav>
 
+    <!-- Flash Messages -->
+    @if(session('success'))
+        <div class="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg">
+            {{ session('success') }}
+        </div>
+    @endif
+    @if(session('error'))
+        <div class="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
+            {{ session('error') }}
+        </div>
+    @endif
+
     <!-- Main Content -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <!-- Video Details (Left Column) -->
@@ -42,9 +54,10 @@
                         src="{{ $video['thumbnail_url'] }}" 
                         alt="{{ $video['title'] }}"
                         class="w-full h-96 object-cover"
+                        id="video-thumbnail-img"
                     >
                 @else
-                    <div class="w-full h-96 bg-gray-200 flex items-center justify-center">
+                    <div class="w-full h-96 bg-gray-200 flex items-center justify-center" id="video-thumbnail-placeholder">
                         <svg class="h-24 w-24 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
                         </svg>
@@ -332,6 +345,27 @@
                         ← Back to Library
                     </a>
                 </div>
+            </div>
+
+            <!-- Update Thumbnail -->
+            <div class="bg-white rounded-lg shadow-sm p-6">
+                <h3 class="text-lg font-heading font-medium text-gray-900 mb-4">Update Thumbnail</h3>
+                <form method="POST" action="{{ route('videos.update-thumbnail', $video['id']) }}" class="space-y-3">
+                    @csrf
+                    <label for="thumbnail_url" class="block text-sm font-medium text-gray-700">Thumbnail URL</label>
+                    <input 
+                        type="url" 
+                        name="thumbnail_url" 
+                        id="thumbnail_url" 
+                        value="{{ $video['thumbnail_url'] ?? '' }}"
+                        placeholder="https://cdn.jwplayer.com/v2/media/XXX/thumbnails/720.jpg"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
+                    >
+                    <p class="text-xs text-gray-500">Leave empty to clear. Overwritten on next WordPress sync.</p>
+                    <button type="submit" class="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition">
+                        Save Thumbnail
+                    </button>
+                </form>
             </div>
 
             <!-- Related Videos -->

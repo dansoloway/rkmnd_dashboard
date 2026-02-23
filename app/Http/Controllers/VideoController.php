@@ -162,6 +162,32 @@ class VideoController extends Controller
     }
 
     /**
+     * Update video thumbnail URL (manual override)
+     */
+    public function updateThumbnail(Request $request, int $id)
+    {
+        $request->validate([
+            'thumbnail_url' => 'nullable|string|max:1000',
+        ]);
+
+        try {
+            $api = $this->getApiService();
+            $api->updateVideoThumbnail($id, $request->input('thumbnail_url', ''));
+
+            return redirect()->route('videos.show', $id)
+                ->with('success', 'Thumbnail updated. Note: it may be overwritten on the next WordPress sync.');
+        } catch (\Exception $e) {
+            Log::error('Failed to update thumbnail', [
+                'video_id' => $id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return redirect()->route('videos.show', $id)
+                ->with('error', 'Failed to update thumbnail: ' . $e->getMessage());
+        }
+    }
+
+    /**
      * Get audio preview URL (AJAX endpoint)
      */
     public function getAudioPreview(int $id)
