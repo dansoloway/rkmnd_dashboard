@@ -42,7 +42,8 @@ class DashboardController extends Controller
             ]);
             
             // Take first 6 for display (most recently updated/synced)
-            $recentVideosRaw = is_array($allVideos) ? array_slice($allVideos, 0, 6) : [];
+            $videosList = isset($allVideos['videos']) ? $allVideos['videos'] : (is_array($allVideos) ? $allVideos : []);
+            $recentVideosRaw = array_slice($videosList, 0, 6);
             
             // Use thumbnail_url from API response (if available)
             $recentVideos = [];

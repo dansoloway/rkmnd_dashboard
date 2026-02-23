@@ -13,9 +13,9 @@
     <!-- Filters & Search -->
     <div class="bg-white rounded-lg shadow-sm p-6">
         <form method="GET" action="{{ route('videos.index') }}" class="space-y-4">
-            <div class="grid grid-cols-1 md:grid-cols-6 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-4">
                 <!-- Search -->
-                <div class="md:col-span-2">
+                <div class="lg:col-span-2">
                     <label for="search" class="block text-sm font-medium text-gray-700 mb-1">Search</label>
                     <input 
                         type="text" 
@@ -86,6 +86,21 @@
                         <option value="created_at" {{ ($filters['sort_by'] ?? 'created_at') === 'created_at' ? 'selected' : '' }}>Date</option>
                         <option value="title" {{ ($filters['sort_by'] ?? '') === 'title' ? 'selected' : '' }}>Title</option>
                         <option value="duration" {{ ($filters['sort_by'] ?? '') === 'duration' ? 'selected' : '' }}>Duration</option>
+                    </select>
+                </div>
+
+                <!-- Per Page -->
+                <div>
+                    <label for="limit" class="block text-sm font-medium text-gray-700 mb-1">Per Page</label>
+                    <select 
+                        id="limit" 
+                        name="limit" 
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    >
+                        <option value="24" {{ ($filters['limit'] ?? 24) == 24 ? 'selected' : '' }}>24</option>
+                        <option value="48" {{ ($filters['limit'] ?? 24) == 48 ? 'selected' : '' }}>48</option>
+                        <option value="96" {{ ($filters['limit'] ?? 24) == 96 ? 'selected' : '' }}>96</option>
+                        <option value="200" {{ ($filters['limit'] ?? 24) == 200 ? 'selected' : '' }}>200</option>
                     </select>
                 </div>
             </div>
@@ -181,31 +196,46 @@
 
         <!-- Pagination -->
         @if($totalPages > 1)
-            <div class="bg-white rounded-lg shadow-sm p-4">
-                <div class="flex items-center justify-between">
+            <div class="bg-white rounded-lg shadow-sm p-4 mt-6">
+                <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
                     <div class="text-sm text-gray-700">
-                        Page {{ $currentPage }} of {{ $totalPages }}
+                        Showing {{ (($currentPage - 1) * ($filters['limit'] ?? 24)) + 1 }}-{{ min($currentPage * ($filters['limit'] ?? 24), $total) }} of {{ $total }} videos
                     </div>
-                    <div class="flex space-x-2">
+                    <div class="flex items-center gap-2">
                         @if($currentPage > 1)
                             <a 
-                                href="{{ route('videos.index', array_merge(request()->query(), ['offset' => ($currentPage - 2) * $filters['limit']])) }}" 
+                                href="{{ route('videos.index', array_merge(request()->query(), ['offset' => 0])) }}" 
+                                class="px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 text-sm"
+                            >
+                                First
+                            </a>
+                            <a 
+                                href="{{ route('videos.index', array_merge(request()->query(), ['offset' => ($currentPage - 2) * ($filters['limit'] ?? 24)])) }}" 
                                 class="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
                             >
                                 Previous
                             </a>
                         @endif
+                        <span class="px-4 py-2 text-gray-600 font-medium">Page {{ $currentPage }} of {{ $totalPages }}</span>
                         @if($currentPage < $totalPages)
                             <a 
-                                href="{{ route('videos.index', array_merge(request()->query(), ['offset' => $currentPage * $filters['limit']])) }}" 
+                                href="{{ route('videos.index', array_merge(request()->query(), ['offset' => $currentPage * ($filters['limit'] ?? 24)])) }}" 
                                 class="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
                             >
                                 Next
+                            </a>
+                            <a 
+                                href="{{ route('videos.index', array_merge(request()->query(), ['offset' => ($totalPages - 1) * ($filters['limit'] ?? 24)])) }}" 
+                                class="px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 text-sm"
+                            >
+                                Last
                             </a>
                         @endif
                     </div>
                 </div>
             </div>
+        @elseif($total > 0)
+            <div class="text-sm text-gray-600 mt-4">Showing all {{ $total }} videos</div>
         @endif
     @else
         <div class="bg-white rounded-lg shadow-sm p-12 text-center">
