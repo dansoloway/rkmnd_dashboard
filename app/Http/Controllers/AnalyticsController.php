@@ -55,7 +55,16 @@ class AnalyticsController extends Controller
                 Log::info('Stats endpoint not available');
             }
 
-            return view('analytics.index', compact('tenantInfo', 'quota', 'analytics', 'stats'));
+            // Get recent search queries
+            $recentQueries = [];
+            try {
+                $queriesResponse = $api->getRecentQueries(50, 7);
+                $recentQueries = $queriesResponse['queries'] ?? [];
+            } catch (\Exception $e) {
+                Log::info('Queries endpoint not available');
+            }
+
+            return view('analytics.index', compact('tenantInfo', 'quota', 'analytics', 'stats', 'recentQueries'));
 
         } catch (\Exception $e) {
             Log::error('Failed to load analytics', [
@@ -67,6 +76,7 @@ class AnalyticsController extends Controller
                 'quota' => null,
                 'analytics' => null,
                 'stats' => null,
+                'recentQueries' => [],
                 'error' => 'Unable to load analytics data.'
             ]);
         }

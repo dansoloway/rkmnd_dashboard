@@ -65,6 +65,7 @@ class QueryController extends Controller
                 'instructors',
                 'currentPage',
                 'totalPages',
+                'perPage',
                 'filters'
             ));
 
@@ -82,6 +83,7 @@ class QueryController extends Controller
                 'instructors' => [],
                 'currentPage' => 1,
                 'totalPages' => 1,
+                'perPage' => 50,
                 'filters' => [],
                 'error' => 'Query failed: ' . $e->getMessage()
             ]);

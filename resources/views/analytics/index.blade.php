@@ -175,6 +175,54 @@
             </dl>
         </div>
     @endif
+
+    <!-- Recent Search Queries -->
+    <div class="bg-white rounded-lg shadow-sm p-6">
+        <h3 class="text-lg font-heading font-medium text-gray-900 mb-4">Recent Search Queries</h3>
+        <p class="text-sm text-gray-500 mb-4">User searches from the video library (last 7 days)</p>
+        @if(!empty($recentQueries))
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Query</th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Results</th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Response</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        @foreach($recentQueries as $item)
+                            <tr>
+                                <td class="px-4 py-3 text-sm text-gray-900">
+                                    <span class="font-medium">{{ e($item['query'] ?? '-') }}</span>
+                                </td>
+                                <td class="px-4 py-3 text-sm text-gray-500">
+                                    @if(!empty($item['timestamp']))
+                                        {{ \Carbon\Carbon::parse($item['timestamp'])->diffForHumans() }}
+                                        <span class="text-gray-400">({{ \Carbon\Carbon::parse($item['timestamp'])->format('M j, g:i A') }})</span>
+                                    @else
+                                        -
+                                    @endif
+                                </td>
+                                <td class="px-4 py-3 text-sm text-gray-500">{{ $item['result_count'] ?? '-' }}</td>
+                                <td class="px-4 py-3 text-sm text-gray-500">
+                                    @if(!empty($item['response_time_ms']))
+                                        {{ number_format($item['response_time_ms']) }} ms
+                                    @else
+                                        -
+                                    @endif
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+            <p class="mt-3 text-sm text-gray-500">Showing up to {{ count($recentQueries) }} most recent searches</p>
+        @else
+            <p class="text-sm text-gray-500">No search queries recorded in the last 7 days.</p>
+        @endif
+    </div>
 </div>
 @endsection
 

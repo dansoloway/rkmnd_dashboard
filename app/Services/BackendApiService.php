@@ -114,6 +114,16 @@ class BackendApiService
         return $this->makeRequest('get', '/api/v1/tenant/quota', [], 600);
     }
 
+    /**
+     * Get recent search queries from users
+     * Cache: 2 minutes (want relatively fresh data)
+     */
+    public function getRecentQueries(int $limit = 50, int $days = 7): array
+    {
+        $params = ['limit' => $limit, 'days' => $days];
+        return $this->makeRequest('get', '/api/v1/tenant/queries', $params, 120);
+    }
+
     // ==========================================
     // VIDEO ENDPOINTS
     // ==========================================
