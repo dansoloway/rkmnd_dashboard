@@ -61,7 +61,10 @@ class AnalyticsController extends Controller
                 $queriesResponse = $api->getRecentQueries(50, 7);
                 $recentQueries = $queriesResponse['queries'] ?? [];
             } catch (\Exception $e) {
-                Log::info('Queries endpoint not available');
+                Log::warning('Queries endpoint failed', [
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
             }
 
             return view('analytics.index', compact('tenantInfo', 'quota', 'analytics', 'stats', 'recentQueries'));
