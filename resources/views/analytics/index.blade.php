@@ -187,8 +187,9 @@
                         <tr>
                             <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Query</th>
                             <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
-                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Results</th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Count</th>
                             <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Response</th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Videos Returned (Score)</th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
@@ -211,6 +212,22 @@
                                         {{ number_format($item['response_time_ms']) }} ms
                                     @else
                                         -
+                                    @endif
+                                </td>
+                                <td class="px-4 py-3 text-sm text-gray-600">
+                                    @if(!empty($item['results']))
+                                        <ol class="list-decimal list-inside space-y-0.5 max-w-md">
+                                            @foreach($item['results'] as $r)
+                                                <li>
+                                                    <span class="font-medium">{{ e($r['title'] ?? '-') }}</span>
+                                                    @if(isset($r['score']))
+                                                        <span class="text-blue-600 font-mono text-xs">({{ number_format((float)$r['score'], 3) }})</span>
+                                                    @endif
+                                                </li>
+                                            @endforeach
+                                        </ol>
+                                    @else
+                                        <span class="text-gray-400">—</span>
                                     @endif
                                 </td>
                             </tr>
