@@ -189,7 +189,7 @@
                             <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
                             <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Count</th>
                             <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Response</th>
-                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Videos Returned (Score)</th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Top 6 Results (Confidence)</th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
@@ -216,12 +216,13 @@
                                 </td>
                                 <td class="px-4 py-3 text-sm text-gray-600">
                                     @if(!empty($item['results']))
+                                        @php $top6 = array_slice($item['results'], 0, 6); @endphp
                                         <ol class="list-decimal list-inside space-y-0.5 max-w-md">
-                                            @foreach($item['results'] as $r)
+                                            @foreach($top6 as $r)
                                                 <li>
                                                     <span class="font-medium">{{ e($r['title'] ?? '-') }}</span>
                                                     @if(isset($r['score']))
-                                                        <span class="text-blue-600 font-mono text-xs">({{ number_format((float)$r['score'], 3) }})</span>
+                                                        <span class="text-blue-600 font-mono text-xs"> — {{ number_format((float)$r['score'] * 100, 1) }}%</span>
                                                     @endif
                                                 </li>
                                             @endforeach
