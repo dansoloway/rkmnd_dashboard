@@ -39,7 +39,7 @@
                         </option>
                     @endforeach
                 </select>
-                <p class="mt-1 text-xs text-gray-500">Same values as the main video library; matches the pipeline <code class="bg-gray-100 px-0.5 rounded">category_for_ai</code> column.</p>
+                <p class="mt-1 text-xs text-gray-500">WordPress meta <code class="bg-gray-100 px-0.5 rounded">details_category_for_ai</code> (synced to pipeline column <code class="bg-gray-100 px-0.5 rounded">category_for_ai</code>).</p>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div class="lg:col-span-2">
