@@ -28,6 +28,19 @@
     <form method="GET" action="{{ route('videos.database') }}" id="explorer-form" class="space-y-6">
         <div class="bg-white rounded-lg shadow-sm p-6 space-y-4">
             <h2 class="text-lg font-semibold text-gray-900">Filters</h2>
+            <div class="max-w-2xl">
+                <label for="category_for_ai" class="block text-sm font-medium text-gray-700 mb-1">Category for AI</label>
+                <select id="category_for_ai" name="category_for_ai"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">All categories</option>
+                    @foreach($categories_for_ai ?? [] as $category => $count)
+                        <option value="{{ $category }}" {{ ($filters['category_for_ai'] ?? '') === $category ? 'selected' : '' }}>
+                            {{ $category }} ({{ $count }})
+                        </option>
+                    @endforeach
+                </select>
+                <p class="mt-1 text-xs text-gray-500">Same values as the main video library; matches the pipeline <code class="bg-gray-100 px-0.5 rounded">category_for_ai</code> column.</p>
+            </div>
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div class="lg:col-span-2">
                     <label for="search" class="block text-sm font-medium text-gray-700 mb-1">Search</label>

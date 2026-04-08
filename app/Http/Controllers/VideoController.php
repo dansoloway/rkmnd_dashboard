@@ -288,9 +288,27 @@ class VideoController extends Controller
         if ($request->filled('post_type')) {
             $filters['post_type'] = $request->input('post_type');
         }
+        if ($request->filled('category_for_ai')) {
+            $filters['category_for_ai'] = $request->input('category_for_ai');
+        }
+
+        $categoriesForAi = [];
 
         try {
             $api = $this->getApiService();
+
+            try {
+                $statsResponse = $api->getWordPressStats();
+                $categoriesForAi = $statsResponse['categories_for_ai'] ?? [];
+                if (is_array($categoriesForAi)) {
+                    ksort($categoriesForAi, SORT_NATURAL | SORT_FLAG_CASE);
+                }
+            } catch (\Exception $e) {
+                Log::warning('Metadata explorer: could not load categories_for_ai options', [
+                    'error' => $e->getMessage(),
+                ]);
+            }
+
             $response = $api->getVideos($filters);
 
             $videos = $response['videos'] ?? $response;
@@ -312,10 +330,12 @@ class VideoController extends Controller
                 'offset' => $offset,
                 'currentPage' => $currentPage,
                 'totalPages' => $totalPages,
+                'categories_for_ai' => $categoriesForAi,
                 'filters' => [
                     'search' => $request->input('search', ''),
                     'status' => $request->input('status', ''),
                     'post_type' => $request->input('post_type', ''),
+                    'category_for_ai' => $request->input('category_for_ai', ''),
                 ],
             ]);
         } catch (\Exception $e) {
@@ -335,10 +355,12 @@ class VideoController extends Controller
                 'offset' => $offset,
                 'currentPage' => 1,
                 'totalPages' => 1,
+                'categories_for_ai' => $categoriesForAi,
                 'filters' => [
                     'search' => $request->input('search', ''),
                     'status' => $request->input('status', ''),
                     'post_type' => $request->input('post_type', ''),
+                    'category_for_ai' => $request->input('category_for_ai', ''),
                 ],
                 'error' => 'Unable to load videos: '.$e->getMessage(),
             ]);
