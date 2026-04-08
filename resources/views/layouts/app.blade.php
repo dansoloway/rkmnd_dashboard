@@ -59,7 +59,7 @@
                             Videos
                         </a>
                         <a href="{{ route('videos.database') }}" class="inline-flex items-center px-1 pt-1 border-b-2 {{ request()->routeIs('videos.database') ? 'border-blue-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700' }}">
-                            Video DB
+                            Metadata
                         </a>
                         <a href="{{ route('query.index') }}" class="inline-flex items-center px-1 pt-1 border-b-2 {{ request()->routeIs('query.*') ? 'border-blue-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700' }}">
                             Query
@@ -101,7 +101,7 @@
                     Videos
                 </a>
                 <a href="{{ route('videos.database') }}" class="block px-3 py-2 rounded-md text-base font-medium {{ request()->routeIs('videos.database') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900' }}">
-                    Video DB
+                    Metadata
                 </a>
                 <a href="{{ route('query.index') }}" class="block px-3 py-2 rounded-md text-base font-medium {{ request()->routeIs('query.*') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900' }}">
                     Query

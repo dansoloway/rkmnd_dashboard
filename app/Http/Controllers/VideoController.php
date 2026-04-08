@@ -10,6 +10,22 @@ class VideoController extends Controller
 {
     protected BackendApiService $api;
 
+    /** Must match FastAPI VIDEO_LIST_DYNAMIC_FIELDS in wordpress.py */
+    private const METADATA_EXPLORER_COLUMNS = [
+        'id', 'wp_post_id', 'jwp_id', 'post_type', 'post_status', 'title', 'slug',
+        'thumbnail_url', 'instructor', 'body_area', 'helps_with', 'props',
+        'short_description', 'long_description', 'content_tags', 'video_category',
+        'category_for_ai', 'video_time', 'run_time', 'video_topic',
+        'video_body_area_taxonomy', 'sync_status', 'error_message', 'last_processed',
+        'wp_created', 'wp_modified', 'created_at', 'updated_at', 'tenant_id',
+        'has_embedding', 'has_audio_preview', 'embedding_count',
+        'audio_preview_duration_seconds', 'audio_preview_status',
+    ];
+
+    private const METADATA_EXPLORER_DEFAULT = [
+        'id', 'wp_post_id', 'title', 'run_time', 'video_time', 'sync_status',
+    ];
+
     public function __construct()
     {
         // API service will be initialized in each method
@@ -22,6 +38,34 @@ class VideoController extends Controller
     {
         $apiKey = session('tenant_api_key') ?? config('backend.default_api_key');
         return new BackendApiService($apiKey);
+    }
+
+    /**
+     * @return array<string, list<string>>
+     */
+    protected function metadataExplorerColumnGroups(): array
+    {
+        return [
+            'Identifiers' => ['id', 'wp_post_id', 'jwp_id', 'slug', 'title', 'tenant_id'],
+            'Publishing' => ['post_type', 'post_status'],
+            'Runtime' => ['run_time', 'video_time'],
+            'People and taxonomy' => [
+                'instructor', 'body_area', 'video_category', 'category_for_ai',
+                'video_topic', 'video_body_area_taxonomy',
+            ],
+            'Content' => [
+                'helps_with', 'props', 'content_tags', 'thumbnail_url',
+                'short_description', 'long_description',
+            ],
+            'Sync and processing' => [
+                'sync_status', 'error_message', 'last_processed',
+                'wp_created', 'wp_modified', 'created_at', 'updated_at',
+            ],
+            'Embeddings and audio' => [
+                'has_embedding', 'has_audio_preview', 'embedding_count',
+                'audio_preview_duration_seconds', 'audio_preview_status',
+            ],
+        ];
     }
 
     /**
@@ -210,123 +254,93 @@ class VideoController extends Controller
     }
 
     /**
-     * Display all videos from database with URL validation
+     * Column-filterable view of pipeline video rows (GET /api/v1/wordpress/videos?fields=...).
      */
     public function database(Request $request)
     {
+        $allowed = self::METADATA_EXPLORER_COLUMNS;
+        $allowedSet = array_flip($allowed);
+
+        $cols = $request->input('cols', []);
+        if (! is_array($cols)) {
+            $cols = [];
+        }
+        $cols = array_values(array_filter($cols, fn ($c) => is_string($c) && isset($allowedSet[$c])));
+        if ($cols === []) {
+            $cols = self::METADATA_EXPLORER_DEFAULT;
+        }
+
+        $limit = min(100, max(1, (int) $request->input('limit', 50)));
+        $offset = max(0, (int) $request->input('offset', 0));
+
+        $filters = [
+            'limit' => $limit,
+            'offset' => $offset,
+            'fields' => implode(',', $cols),
+        ];
+
+        if ($request->filled('search')) {
+            $filters['search'] = $request->input('search');
+        }
+        if ($request->filled('status')) {
+            $filters['status'] = $request->input('status');
+        }
+        if ($request->filled('post_type')) {
+            $filters['post_type'] = $request->input('post_type');
+        }
+
         try {
             $api = $this->getApiService();
-
-            // Get first 10 videos for now (to avoid slow loading)
-            $filters = [
-                'limit' => 10,
-                'offset' => 0,
-            ];
-
             $response = $api->getVideos($filters);
-            
-            // API returns a direct array of videos, not wrapped in 'videos' key
-            if (isset($response['videos'])) {
-                $videos = $response['videos'];
-            } else {
-                $videos = $response;
-            }
 
-            // Process videos and fetch details for each to get thumbnail and audio URLs
-            $processedVideos = [];
-            $totalVideos = count($videos);
-            
-            foreach ($videos as $index => $video) {
-                $videoId = $video['id'] ?? null;
-                $wpPostId = $video['wp_post_id'] ?? null;
-                $title = $video['title'] ?? 'Untitled';
-                $videoCategory = $video['video_category'] ?? 'N/A';
-                
-                $thumbnail = null;
-                $audioFile = null;
-                
-                // Fetch individual video details to get thumbnail and audio URLs
-                if ($videoId) {
-                    try {
-                        $videoDetails = $api->getVideoById($videoId);
-                        $videoData = $videoDetails['video'] ?? $videoDetails;
-                        
-                        // Get thumbnail URL from API response, or fallback to fetching from WordPress
-                        $thumbnail = $videoData['thumbnail_url'] ?? null;
-                        
-                        if (!$thumbnail && $wpPostId) {
-                            // Fallback: try to fetch from WordPress REST API
-                            $thumbnail = $this->getWordPressThumbnailUrl($wpPostId, $title);
-                        }
-                        
-                        // Extract audio from audio_previews
-                        $audioPreviews = $videoDetails['audio_previews'] ?? [];
-                        if (!empty($audioPreviews) && is_array($audioPreviews)) {
-                            $firstAudio = $audioPreviews[0];
-                            $audioFile = $firstAudio['s3_url'] ?? $firstAudio['url'] ?? null;
-                        }
-                        
-                        // Also check for video_category in details if not found in list
-                        if ($videoCategory === 'N/A' && isset($videoData['video_category'])) {
-                            $videoCategory = $videoData['video_category'];
-                        }
-                        
-                    } catch (\Exception $e) {
-                        Log::warning('Failed to fetch video details', [
-                            'video_id' => $videoId,
-                            'error' => $e->getMessage()
-                        ]);
-                        // Continue with null values
-                    }
-                }
-                
-                // Check if URLs exist
-                $thumbnailExists = $this->checkUrlExists($thumbnail);
-                $audioExists = $this->checkUrlExists($audioFile);
-                
-                $processedVideos[] = [
-                    'id' => $videoId,
-                    'wp_post_id' => $wpPostId,
-                    'title' => $title,
-                    'video_category' => $videoCategory,
-                    'thumbnail' => $thumbnail,
-                    'thumbnail_exists' => $thumbnailExists,
-                    'audio_file' => $audioFile,
-                    'audio_exists' => $audioExists,
-                ];
-                
-                // Log progress every 50 videos
-                if (($index + 1) % 50 === 0) {
-                    Log::info('Processing videos database', [
-                        'progress' => ($index + 1) . '/' . $totalVideos
-                    ]);
-                }
+            $videos = $response['videos'] ?? $response;
+            if (! is_array($videos)) {
+                $videos = [];
             }
-
-            // Sort by wp_post_id
-            usort($processedVideos, function($a, $b) {
-                return ($a['wp_post_id'] ?? 0) <=> ($b['wp_post_id'] ?? 0);
-            });
+            $total = (int) ($response['total'] ?? count($videos));
+            $totalPages = (int) max(1, (int) ceil($total / $limit));
+            $currentPage = (int) floor($offset / $limit) + 1;
 
             return view('videos.database', [
-                'videos' => $processedVideos,
-                'total' => count($processedVideos),
-                'thumbnail_valid' => count(array_filter($processedVideos, fn($v) => $v['thumbnail_exists'])),
-                'audio_valid' => count(array_filter($processedVideos, fn($v) => $v['audio_exists'])),
+                'videos' => $videos,
+                'total' => $total,
+                'selectedColumns' => $cols,
+                'defaultColumns' => self::METADATA_EXPLORER_DEFAULT,
+                'columnGroups' => $this->metadataExplorerColumnGroups(),
+                'allowedColumns' => $allowed,
+                'limit' => $limit,
+                'offset' => $offset,
+                'currentPage' => $currentPage,
+                'totalPages' => $totalPages,
+                'filters' => [
+                    'search' => $request->input('search', ''),
+                    'status' => $request->input('status', ''),
+                    'post_type' => $request->input('post_type', ''),
+                ],
             ]);
-
         } catch (\Exception $e) {
-            Log::error('Failed to load videos database', [
+            Log::error('Failed to load videos database explorer', [
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return view('videos.database', [
                 'videos' => [],
                 'total' => 0,
-                'thumbnail_valid' => 0,
-                'audio_valid' => 0,
-                'error' => 'Unable to load videos: ' . $e->getMessage()
+                'selectedColumns' => $cols,
+                'defaultColumns' => self::METADATA_EXPLORER_DEFAULT,
+                'columnGroups' => $this->metadataExplorerColumnGroups(),
+                'allowedColumns' => $allowed,
+                'limit' => $limit,
+                'offset' => $offset,
+                'currentPage' => 1,
+                'totalPages' => 1,
+                'filters' => [
+                    'search' => $request->input('search', ''),
+                    'status' => $request->input('status', ''),
+                    'post_type' => $request->input('post_type', ''),
+                ],
+                'error' => 'Unable to load videos: '.$e->getMessage(),
             ]);
         }
     }

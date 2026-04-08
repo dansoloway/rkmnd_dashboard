@@ -142,7 +142,9 @@ class BackendApiService
      *  - search: string
      *  - sort_by: string (created_at, title, duration, instructor)
      *  - sort_order: string (asc, desc)
-     * 
+     *  - fields: string — comma-separated allowlisted column names for metadata explorer
+     *    (see AI Pipeline GET /api/v1/wordpress/videos); omit for default list shape
+     *
      * Cache: 2 minutes
      */
     public function getVideos(array $filters = []): array
