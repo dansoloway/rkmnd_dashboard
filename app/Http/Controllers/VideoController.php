@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Services\BackendApiService;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class VideoController extends Controller
 {
@@ -26,6 +28,10 @@ class VideoController extends Controller
     private const METADATA_EXPLORER_DEFAULT = [
         'id', 'wp_post_id', 'title', 'run_time', 'video_time', 'sync_status',
     ];
+
+    private const METADATA_EXPLORER_MAX_LIMIT = 500;
+
+    private const METADATA_EXPORT_MAX_ROWS = 5000;
 
     public function __construct()
     {
@@ -68,6 +74,100 @@ class VideoController extends Controller
                 'audio_preview_url',
             ],
         ];
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function normalizeMetadataExplorerColumns(Request $request): array
+    {
+        $allowedSet = array_flip(self::METADATA_EXPLORER_COLUMNS);
+        $cols = $request->input('cols', []);
+        if (! is_array($cols)) {
+            $cols = [];
+        }
+        $cols = array_values(array_filter($cols, fn ($c) => is_string($c) && isset($allowedSet[$c])));
+        if ($cols === []) {
+            return self::METADATA_EXPLORER_DEFAULT;
+        }
+
+        return $cols;
+    }
+
+    /**
+     * @param  list<string>  $cols
+     * @return array<string, int|string>
+     */
+    private function buildMetadataExplorerApiFilters(Request $request, int $limit, int $offset, array $cols): array
+    {
+        $limit = min(self::METADATA_EXPLORER_MAX_LIMIT, max(1, $limit));
+        $offset = max(0, $offset);
+        $filters = [
+            'limit' => $limit,
+            'offset' => $offset,
+            'fields' => implode(',', $cols),
+        ];
+        if ($request->filled('search')) {
+            $filters['search'] = $request->input('search');
+        }
+        if ($request->filled('status')) {
+            $filters['status'] = $request->input('status');
+        }
+        if ($request->filled('post_type')) {
+            $filters['post_type'] = $request->input('post_type');
+        }
+        if ($request->filled('category_for_ai')) {
+            $filters['category_for_ai'] = $request->input('category_for_ai');
+        }
+        if ($request->boolean('in_ai_search_index')) {
+            $filters['embedding_namespace'] = 'v6_title_tags';
+        }
+
+        return $filters;
+    }
+
+    private function metadataExplorerCsvCell(mixed $val): string
+    {
+        if ($val === null) {
+            return '';
+        }
+        if (is_bool($val)) {
+            return $val ? 'true' : 'false';
+        }
+        if (is_int($val) || is_float($val)) {
+            return (string) $val;
+        }
+        if (is_string($val)) {
+            return $val;
+        }
+
+        return json_encode($val, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?: '';
+    }
+
+    /**
+     * @param  list<string>  $cols
+     * @param  list<array<string, mixed>>  $rows
+     */
+    private function streamMetadataExplorerCsv(string $filename, array $cols, array $rows): StreamedResponse
+    {
+        return response()->streamDownload(function () use ($cols, $rows) {
+            $out = fopen('php://output', 'w');
+            if ($out === false) {
+                return;
+            }
+            fprintf($out, chr(0xEF).chr(0xBB).chr(0xBF));
+            fputcsv($out, $cols);
+            foreach ($rows as $video) {
+                $line = [];
+                foreach ($cols as $c) {
+                    $line[] = $this->metadataExplorerCsvCell($video[$c] ?? null);
+                }
+                fputcsv($out, $line);
+            }
+            fclose($out);
+        }, $filename, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
     }
 
     /**
@@ -260,42 +360,10 @@ class VideoController extends Controller
      */
     public function database(Request $request)
     {
-        $allowed = self::METADATA_EXPLORER_COLUMNS;
-        $allowedSet = array_flip($allowed);
-
-        $cols = $request->input('cols', []);
-        if (! is_array($cols)) {
-            $cols = [];
-        }
-        $cols = array_values(array_filter($cols, fn ($c) => is_string($c) && isset($allowedSet[$c])));
-        if ($cols === []) {
-            $cols = self::METADATA_EXPLORER_DEFAULT;
-        }
-
-        $limit = min(100, max(1, (int) $request->input('limit', 50)));
+        $cols = $this->normalizeMetadataExplorerColumns($request);
+        $limit = min(self::METADATA_EXPLORER_MAX_LIMIT, max(1, (int) $request->input('limit', 50)));
         $offset = max(0, (int) $request->input('offset', 0));
-
-        $filters = [
-            'limit' => $limit,
-            'offset' => $offset,
-            'fields' => implode(',', $cols),
-        ];
-
-        if ($request->filled('search')) {
-            $filters['search'] = $request->input('search');
-        }
-        if ($request->filled('status')) {
-            $filters['status'] = $request->input('status');
-        }
-        if ($request->filled('post_type')) {
-            $filters['post_type'] = $request->input('post_type');
-        }
-        if ($request->filled('category_for_ai')) {
-            $filters['category_for_ai'] = $request->input('category_for_ai');
-        }
-        if ($request->boolean('in_ai_search_index')) {
-            $filters['embedding_namespace'] = 'v6_title_tags';
-        }
+        $filters = $this->buildMetadataExplorerApiFilters($request, $limit, $offset, $cols);
 
         $categoriesForAi = [];
 
@@ -321,8 +389,16 @@ class VideoController extends Controller
                 $videos = [];
             }
             $total = (int) ($response['total'] ?? count($videos));
-            $totalPages = (int) max(1, (int) ceil($total / $limit));
+            $totalPages = $total > 0 ? (int) max(1, (int) ceil($total / $limit)) : 1;
             $currentPage = (int) floor($offset / $limit) + 1;
+            $paginationFrom = $total > 0 ? $offset + 1 : 0;
+            $paginationTo = $total > 0 ? min($offset + count($videos), $total) : 0;
+            $window = 7;
+            $half = intdiv($window, 2);
+            $pageStart = max(1, $currentPage - $half);
+            $pageEnd = min($totalPages, $pageStart + $window - 1);
+            $pageStart = max(1, $pageEnd - $window + 1);
+            $paginationPages = $totalPages > 0 ? range($pageStart, $pageEnd) : [];
 
             return view('videos.database', [
                 'videos' => $videos,
@@ -330,11 +406,15 @@ class VideoController extends Controller
                 'selectedColumns' => $cols,
                 'defaultColumns' => self::METADATA_EXPLORER_DEFAULT,
                 'columnGroups' => $this->metadataExplorerColumnGroups(),
-                'allowedColumns' => $allowed,
+                'allowedColumns' => self::METADATA_EXPLORER_COLUMNS,
                 'limit' => $limit,
                 'offset' => $offset,
                 'currentPage' => $currentPage,
                 'totalPages' => $totalPages,
+                'paginationFrom' => $paginationFrom,
+                'paginationTo' => $paginationTo,
+                'paginationPages' => $paginationPages,
+                'exportMaxRows' => self::METADATA_EXPORT_MAX_ROWS,
                 'categories_for_ai' => $categoriesForAi,
                 'filters' => [
                     'search' => $request->input('search', ''),
@@ -356,11 +436,15 @@ class VideoController extends Controller
                 'selectedColumns' => $cols,
                 'defaultColumns' => self::METADATA_EXPLORER_DEFAULT,
                 'columnGroups' => $this->metadataExplorerColumnGroups(),
-                'allowedColumns' => $allowed,
+                'allowedColumns' => self::METADATA_EXPLORER_COLUMNS,
                 'limit' => $limit,
                 'offset' => $offset,
                 'currentPage' => 1,
                 'totalPages' => 1,
+                'paginationFrom' => 0,
+                'paginationTo' => 0,
+                'paginationPages' => [],
+                'exportMaxRows' => self::METADATA_EXPORT_MAX_ROWS,
                 'categories_for_ai' => $categoriesForAi,
                 'filters' => [
                     'search' => $request->input('search', ''),
@@ -371,6 +455,82 @@ class VideoController extends Controller
                 ],
                 'error' => 'Unable to load videos: '.$e->getMessage(),
             ]);
+        }
+    }
+
+    /**
+     * Download metadata explorer rows as CSV (same filters and columns as the table).
+     */
+    public function databaseExport(Request $request): StreamedResponse|RedirectResponse
+    {
+        $scope = $request->input('scope', 'all');
+        if (! in_array($scope, ['page', 'all'], true)) {
+            $scope = 'all';
+        }
+
+        try {
+            $api = $this->getApiService();
+            $cols = $this->normalizeMetadataExplorerColumns($request);
+            $limit = min(self::METADATA_EXPLORER_MAX_LIMIT, max(1, (int) $request->input('limit', 50)));
+            $offset = max(0, (int) $request->input('offset', 0));
+            $stamp = now()->format('Ymd_His');
+
+            if ($scope === 'page') {
+                $filters = $this->buildMetadataExplorerApiFilters($request, $limit, $offset, $cols);
+                $response = $api->getVideos($filters);
+                $videos = $response['videos'] ?? $response;
+                if (! is_array($videos)) {
+                    $videos = [];
+                }
+                $pageNum = (int) (floor($offset / $limit) + 1);
+                $filename = "video_metadata_{$stamp}_page{$pageNum}.csv";
+
+                return $this->streamMetadataExplorerCsv($filename, $cols, $videos);
+            }
+
+            $batchSize = min(100, self::METADATA_EXPLORER_MAX_LIMIT);
+            $accumulated = [];
+            $total = null;
+            $walkOffset = 0;
+
+            while (count($accumulated) < self::METADATA_EXPORT_MAX_ROWS) {
+                $take = min($batchSize, self::METADATA_EXPORT_MAX_ROWS - count($accumulated));
+                $filters = $this->buildMetadataExplorerApiFilters($request, $take, $walkOffset, $cols);
+                $response = $api->getVideos($filters);
+                $videos = $response['videos'] ?? $response;
+                if (! is_array($videos)) {
+                    $videos = [];
+                }
+                if ($total === null) {
+                    $total = (int) ($response['total'] ?? count($videos));
+                }
+                foreach ($videos as $v) {
+                    $accumulated[] = $v;
+                }
+                if (count($videos) === 0) {
+                    break;
+                }
+                if (count($videos) < $take || count($accumulated) >= $total) {
+                    break;
+                }
+                $walkOffset += $take;
+            }
+
+            $rowCount = count($accumulated);
+            $truncated = $total !== null && $rowCount < $total;
+            $suffix = $truncated ? "_{$rowCount}rows_partial" : "_{$rowCount}rows";
+            $filename = "video_metadata_{$stamp}{$suffix}.csv";
+
+            return $this->streamMetadataExplorerCsv($filename, $cols, $accumulated);
+        } catch (\Exception $e) {
+            Log::error('Metadata CSV export failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return redirect()
+                ->route('videos.database', $request->query())
+                ->with('error', 'CSV export failed: '.$e->getMessage());
         }
     }
 

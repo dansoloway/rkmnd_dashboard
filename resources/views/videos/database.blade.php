@@ -29,6 +29,11 @@
             {{ $error }}
         </div>
     @endif
+    @if(session('error'))
+        <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+            {{ session('error') }}
+        </div>
+    @endif
 
     <form method="GET" action="{{ route('videos.database') }}" id="explorer-form" class="space-y-6">
         <div class="bg-white rounded-lg shadow-sm p-6 space-y-4">
@@ -80,9 +85,9 @@
                     </label>
                 </div>
                 <div>
-                    <label for="limit" class="block text-sm font-medium text-gray-700 mb-1">Per page</label>
+                    <label for="limit" class="block text-sm font-medium text-gray-700 mb-1">Results per page</label>
                     <select id="limit" name="limit" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                        @foreach([25, 50, 100] as $n)
+                        @foreach([25, 50, 100, 200, 500] as $n)
                             <option value="{{ $n }}" {{ (int) $limit === $n ? 'selected' : '' }}>{{ $n }}</option>
                         @endforeach
                     </select>
@@ -127,26 +132,71 @@
         <input type="hidden" name="offset" value="0" id="explorer-offset-reset">
     </form>
 
+    @php
+        $exportBase = route('videos.database-export');
+        $exportQueryPage = http_build_query(array_merge(request()->query(), ['scope' => 'page']));
+        $exportQueryAll = http_build_query(array_merge(request()->query(), ['scope' => 'all']));
+    @endphp
     <div class="bg-white rounded-lg shadow-sm overflow-hidden">
-        <div class="px-6 py-3 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <p class="text-sm text-gray-600">
-                Page <strong>{{ $currentPage }}</strong> of <strong>{{ $totalPages }}</strong>
-            </p>
-            <div class="flex gap-2">
-                @if($offset > 0)
-                    <a href="{{ request()->fullUrlWithQuery(['offset' => max(0, $offset - $limit)]) }}"
-                       class="px-3 py-1.5 text-sm bg-gray-100 text-gray-800 rounded-md hover:bg-gray-200">Previous</a>
+        <div class="px-6 py-3 border-b border-gray-200 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+            <div class="text-sm text-gray-600 space-y-1">
+                @if(($total ?? 0) > 0)
+                    <p>
+                        Showing <strong>{{ number_format($paginationFrom ?? 1) }}</strong>–<strong>{{ number_format($paginationTo ?? count($videos)) }}</strong>
+                        of <strong>{{ number_format($total) }}</strong>
+                        · Page <strong>{{ $currentPage }}</strong> of <strong>{{ $totalPages }}</strong>
+                    </p>
                 @else
-                    <span class="px-3 py-1.5 text-sm text-gray-400 rounded-md">Previous</span>
+                    <p>No rows match these filters.</p>
                 @endif
-                @if($offset + $limit < $total)
-                    <a href="{{ request()->fullUrlWithQuery(['offset' => $offset + $limit]) }}"
-                       class="px-3 py-1.5 text-sm bg-gray-100 text-gray-800 rounded-md hover:bg-gray-200">Next</a>
-                @else
-                    <span class="px-3 py-1.5 text-sm text-gray-400 rounded-md">Next</span>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+                @if(($total ?? 0) > 0)
+                    <a href="{{ $exportBase }}?{{ $exportQueryPage }}"
+                       class="px-3 py-1.5 text-sm bg-green-600 text-white rounded-md hover:bg-green-700 shadow-sm">
+                        CSV · this page
+                    </a>
+                    <a href="{{ $exportBase }}?{{ $exportQueryAll }}"
+                       class="px-3 py-1.5 text-sm bg-green-700 text-white rounded-md hover:bg-green-800 shadow-sm"
+                       title="Fetches in batches; filenames ending in _partial mean more rows exist than the export cap.">
+                        CSV · all matching
+                    </a>
+                    <span class="text-xs text-gray-500 max-w-xs lg:max-w-md">“All matching” includes up to {{ number_format($exportMaxRows ?? 5000) }} rows per download.</span>
                 @endif
             </div>
         </div>
+        @if(($total ?? 0) > 0)
+            <div class="px-6 py-3 border-b border-gray-200 bg-gray-50 flex flex-wrap items-center justify-center gap-1 sm:gap-2">
+                @if($offset > 0)
+                    <a href="{{ request()->fullUrlWithQuery(['offset' => 0]) }}"
+                       class="px-2.5 py-1 text-sm rounded-md bg-white border border-gray-300 text-gray-800 hover:bg-gray-100">First</a>
+                    <a href="{{ request()->fullUrlWithQuery(['offset' => max(0, $offset - $limit)]) }}"
+                       class="px-2.5 py-1 text-sm rounded-md bg-white border border-gray-300 text-gray-800 hover:bg-gray-100">Previous</a>
+                @else
+                    <span class="px-2.5 py-1 text-sm text-gray-400 rounded-md">First</span>
+                    <span class="px-2.5 py-1 text-sm text-gray-400 rounded-md">Previous</span>
+                @endif
+
+                @foreach($paginationPages ?? [] as $p)
+                    @if($p === $currentPage)
+                        <span class="px-3 py-1 text-sm rounded-md bg-blue-600 text-white font-medium">{{ $p }}</span>
+                    @else
+                        <a href="{{ request()->fullUrlWithQuery(['offset' => ($p - 1) * $limit]) }}"
+                           class="px-3 py-1 text-sm rounded-md bg-white border border-gray-300 text-gray-800 hover:bg-gray-100">{{ $p }}</a>
+                    @endif
+                @endforeach
+
+                @if($offset + $limit < $total)
+                    <a href="{{ request()->fullUrlWithQuery(['offset' => $offset + $limit]) }}"
+                       class="px-2.5 py-1 text-sm rounded-md bg-white border border-gray-300 text-gray-800 hover:bg-gray-100">Next</a>
+                    <a href="{{ request()->fullUrlWithQuery(['offset' => max(0, ($totalPages - 1) * $limit)]) }}"
+                       class="px-2.5 py-1 text-sm rounded-md bg-white border border-gray-300 text-gray-800 hover:bg-gray-100">Last</a>
+                @else
+                    <span class="px-2.5 py-1 text-sm text-gray-400 rounded-md">Next</span>
+                    <span class="px-2.5 py-1 text-sm text-gray-400 rounded-md">Last</span>
+                @endif
+            </div>
+        @endif
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200 text-sm">
                 <thead class="bg-gray-50">
