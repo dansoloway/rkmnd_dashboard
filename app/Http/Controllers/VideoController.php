@@ -22,7 +22,7 @@ class VideoController extends Controller
         'wp_created', 'wp_modified', 'created_at', 'updated_at', 'tenant_id',
         'has_embedding', 'has_audio_preview', 'embedding_count',
         'audio_preview_duration_seconds', 'audio_preview_status',
-        'audio_preview_url',
+        'audio_preview_url', 'audio_preview_source_text',
     ];
 
     private const METADATA_EXPLORER_DEFAULT = [
@@ -73,7 +73,7 @@ class VideoController extends Controller
             'Embeddings and audio' => [
                 'has_embedding', 'has_audio_preview', 'embedding_count',
                 'audio_preview_duration_seconds', 'audio_preview_status',
-                'audio_preview_url',
+                'audio_preview_url', 'audio_preview_source_text',
             ],
         ];
     }

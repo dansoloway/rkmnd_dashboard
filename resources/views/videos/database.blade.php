@@ -16,7 +16,7 @@
             <p class="mt-2 text-sm text-gray-600">
                 <em>Public AI search index</em> limits rows to the same eligibility rules as the default
                 <code class="text-xs bg-gray-100 px-1 rounded">v6_title_tags</code> pipeline (published <code class="text-xs bg-gray-100 px-1 rounded">video</code>, JW Player id, allowed category for AI).
-                Add columns <code class="text-xs bg-gray-100 px-1 rounded">thumbnail_url</code> and <code class="text-xs bg-gray-100 px-1 rounded">audio_preview_url</code> to inspect assets.
+                Add columns <code class="text-xs bg-gray-100 px-1 rounded">thumbnail_url</code>, <code class="text-xs bg-gray-100 px-1 rounded">audio_preview_url</code>, and <code class="text-xs bg-gray-100 px-1 rounded">audio_preview_source_text</code> (same DB field as “Audio Script” on the video detail page).
             </p>
         </div>
         <a href="{{ route('videos.index') }}" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition whitespace-nowrap">
