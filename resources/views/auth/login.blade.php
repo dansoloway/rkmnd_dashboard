@@ -123,17 +123,6 @@
                     </button>
                 </div>
             </form>
-
-            <!-- Test Credentials Info (remove in production) -->
-            <div class="mt-6 p-4 bg-blue-50 rounded-md">
-                <p class="text-xs text-blue-800 font-medium mb-2">Test Credentials:</p>
-                <p class="text-xs text-blue-700">
-                    Admin: <code class="bg-blue-100 px-1 py-0.5 rounded">admin@testclient.com</code> / <code class="bg-blue-100 px-1 py-0.5 rounded">password</code>
-                </p>
-                <p class="text-xs text-blue-700 mt-1">
-                    User: <code class="bg-blue-100 px-1 py-0.5 rounded">user@testclient.com</code> / <code class="bg-blue-100 px-1 py-0.5 rounded">password</code>
-                </p>
-            </div>
         </div>
     </div>
 
