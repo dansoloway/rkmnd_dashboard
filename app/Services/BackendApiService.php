@@ -142,6 +142,7 @@ class BackendApiService
      *  - search: string
      *  - sort_by: string (created_at, title, duration, instructor)
      *  - sort_order: string (asc, desc)
+     *  - embedding_namespace: string — e.g. v6_title_tags (videos indexed for POST /api/v1/search)
      *  - fields: string — comma-separated allowlisted column names for metadata explorer
      *    (see AI Pipeline GET /api/v1/wordpress/videos); omit for default list shape
      *

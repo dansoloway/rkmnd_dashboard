@@ -20,6 +20,7 @@ class VideoController extends Controller
         'wp_created', 'wp_modified', 'created_at', 'updated_at', 'tenant_id',
         'has_embedding', 'has_audio_preview', 'embedding_count',
         'audio_preview_duration_seconds', 'audio_preview_status',
+        'audio_preview_url',
     ];
 
     private const METADATA_EXPLORER_DEFAULT = [
@@ -64,6 +65,7 @@ class VideoController extends Controller
             'Embeddings and audio' => [
                 'has_embedding', 'has_audio_preview', 'embedding_count',
                 'audio_preview_duration_seconds', 'audio_preview_status',
+                'audio_preview_url',
             ],
         ];
     }
@@ -291,6 +293,9 @@ class VideoController extends Controller
         if ($request->filled('category_for_ai')) {
             $filters['category_for_ai'] = $request->input('category_for_ai');
         }
+        if ($request->boolean('in_ai_search_index')) {
+            $filters['embedding_namespace'] = 'v6_title_tags';
+        }
 
         $categoriesForAi = [];
 
@@ -336,6 +341,7 @@ class VideoController extends Controller
                     'status' => $request->input('status', ''),
                     'post_type' => $request->input('post_type', ''),
                     'category_for_ai' => $request->input('category_for_ai', ''),
+                    'in_ai_search_index' => $request->boolean('in_ai_search_index'),
                 ],
             ]);
         } catch (\Exception $e) {
@@ -361,6 +367,7 @@ class VideoController extends Controller
                     'status' => $request->input('status', ''),
                     'post_type' => $request->input('post_type', ''),
                     'category_for_ai' => $request->input('category_for_ai', ''),
+                    'in_ai_search_index' => $request->boolean('in_ai_search_index'),
                 ],
                 'error' => 'Unable to load videos: '.$e->getMessage(),
             ]);
