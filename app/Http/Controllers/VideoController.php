@@ -29,9 +29,11 @@ class VideoController extends Controller
         'id', 'wp_post_id', 'title', 'run_time', 'video_time', 'sync_status',
     ];
 
-    private const METADATA_EXPLORER_MAX_LIMIT = 500;
+    /** Max rows per GET /api/v1/wordpress/videos (metadata explorer page + export batches). */
+    private const METADATA_EXPLORER_MAX_LIMIT = 10000;
 
-    private const METADATA_EXPORT_MAX_ROWS = 5000;
+    /** Max rows in a single “CSV · all matching” download. */
+    private const METADATA_EXPORT_MAX_ROWS = 25000;
 
     public function __construct()
     {
@@ -488,7 +490,7 @@ class VideoController extends Controller
                 return $this->streamMetadataExplorerCsv($filename, $cols, $videos);
             }
 
-            $batchSize = min(100, self::METADATA_EXPLORER_MAX_LIMIT);
+            $batchSize = min(1000, self::METADATA_EXPLORER_MAX_LIMIT);
             $accumulated = [];
             $total = null;
             $walkOffset = 0;

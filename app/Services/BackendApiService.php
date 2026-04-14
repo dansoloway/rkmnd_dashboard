@@ -132,7 +132,7 @@ class BackendApiService
      * Get list of videos with filters
      * 
      * @param array $filters Supported filters:
-     *  - limit: int (default 50)
+     *  - limit: int (default 50; pipeline caps at 10_000)
      *  - offset: int (default 0)
      *  - category: string
      *  - difficulty: string
