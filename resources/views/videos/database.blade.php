@@ -14,8 +14,9 @@
                 (showing {{ count($videos) }} on this page).
             </p>
             <p class="mt-2 text-sm text-gray-600">
-                To list only titles that <strong>POST /api/v1/search</strong> can return (same Pinecone namespace as the default <code class="text-xs bg-gray-100 px-1 rounded">v6_title_tags</code> index),
-                enable <em>Public AI search index</em> below and select columns <code class="text-xs bg-gray-100 px-1 rounded">thumbnail_url</code> and <code class="text-xs bg-gray-100 px-1 rounded">audio_preview_url</code>.
+                <em>Public AI search index</em> limits rows to the same eligibility rules as the default
+                <code class="text-xs bg-gray-100 px-1 rounded">v6_title_tags</code> pipeline (published <code class="text-xs bg-gray-100 px-1 rounded">video</code>, JW Player id, allowed category for AI).
+                Add columns <code class="text-xs bg-gray-100 px-1 rounded">thumbnail_url</code> and <code class="text-xs bg-gray-100 px-1 rounded">audio_preview_url</code> to inspect assets.
             </p>
         </div>
         <a href="{{ route('videos.index') }}" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition whitespace-nowrap">
@@ -75,7 +76,7 @@
                         <input type="checkbox" name="in_ai_search_index" value="1"
                                class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                                {{ !empty($filters['in_ai_search_index']) ? 'checked' : '' }}>
-                        <span>Public AI search index only (<code class="text-xs bg-gray-100 px-0.5 rounded">v6_title_tags</code>)</span>
+                        <span>Public AI search pool only (<code class="text-xs bg-gray-100 px-0.5 rounded">v6_title_tags</code> rules)</span>
                     </label>
                 </div>
                 <div>
