@@ -10,9 +10,17 @@
                 with thumbnail, audio script text, and the audio preview file.
             </p>
             <p class="mt-2 text-sm text-gray-600">
-                This page only displays rows that have an <code class="text-xs bg-gray-100 px-1 rounded">audio_preview_url</code>.
-                (API returned {{ number_format($rawCount ?? 0) }} rows for this page; showing {{ number_format(count($videos ?? [])) }} with audio.)
+                Loads every matching row in one list (no pagination). Showing <strong>{{ number_format(count($videos ?? [])) }}</strong>
+                @if(isset($totalFromApi))
+                    (API total for these filters: <strong>{{ number_format($totalFromApi) }}</strong>).
+                @endif
+                Rows without an <code class="text-xs bg-gray-100 px-1 rounded">audio_preview_url</code> still appear; audio/script cells may be empty.
             </p>
+            @if(!empty($truncated))
+                <p class="mt-2 text-sm text-amber-800 bg-amber-50 border border-amber-200 rounded px-3 py-2">
+                    List capped at {{ number_format($maxRows ?? 25000) }} rows for safety. Narrow filters or use the metadata explorer export if you need more.
+                </p>
+            @endif
         </div>
         <div class="flex flex-wrap gap-2">
             <a href="{{ route('videos.database', array_merge(request()->query(), ['in_ai_search_index' => 1])) }}"
@@ -64,16 +72,6 @@
                         @endforeach
                     </select>
                     <p class="mt-1 text-xs text-gray-500">If “LT” is a category, select it here.</p>
-                </div>
-
-                <div>
-                    <label for="limit" class="block text-sm font-medium text-gray-700 mb-1">Results per page</label>
-                    <select id="limit" name="limit"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                        @foreach([25, 50, 100, 200] as $n)
-                            <option value="{{ $n }}" {{ (int) ($limit ?? 50) === $n ? 'selected' : '' }}>{{ $n }}</option>
-                        @endforeach
-                    </select>
                 </div>
             </div>
 
@@ -166,36 +164,6 @@
                 </table>
             </div>
         </div>
-
-        @if(($totalPages ?? 1) > 1)
-            <div class="bg-white rounded-lg shadow-sm p-4">
-                <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
-                    <div class="text-sm text-gray-700">
-                        Page {{ $currentPage ?? 1 }} of {{ $totalPages ?? 1 }}
-                    </div>
-                    <div class="flex items-center gap-2">
-                        @php
-                            $q = request()->query();
-                            $lim = (int) ($limit ?? 50);
-                            $page = (int) ($currentPage ?? 1);
-                            $tp = (int) ($totalPages ?? 1);
-                        @endphp
-                        @if($page > 1)
-                            <a href="{{ route('videos.search-visible-audio', array_merge($q, ['offset' => 0])) }}"
-                               class="px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 text-sm">First</a>
-                            <a href="{{ route('videos.search-visible-audio', array_merge($q, ['offset' => max(0, ($page - 2) * $lim)])) }}"
-                               class="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50">Previous</a>
-                        @endif
-                        @if($page < $tp)
-                            <a href="{{ route('videos.search-visible-audio', array_merge($q, ['offset' => $page * $lim])) }}"
-                               class="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50">Next</a>
-                            <a href="{{ route('videos.search-visible-audio', array_merge($q, ['offset' => max(0, ($tp - 1) * $lim)])) }}"
-                               class="px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 text-sm">Last</a>
-                        @endif
-                    </div>
-                </div>
-            </div>
-        @endif
     @else
         <div class="bg-white rounded-lg shadow-sm p-12 text-center">
             <h3 class="text-sm font-medium text-gray-900">No search-visible videos with audio found</h3>

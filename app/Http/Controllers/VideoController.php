@@ -47,6 +47,9 @@ class VideoController extends Controller
         'audio_preview_source_text',
     ];
 
+    /** Batch size when loading all search-visible rows (no UI pagination). */
+    private const SEARCH_VISIBLE_AUDIO_FETCH_BATCH = 1000;
+
     public function __construct()
     {
         // API service will be initialized in each method
@@ -280,53 +283,82 @@ class VideoController extends Controller
      * List videos that are eligible for the public Search API (v6_title_tags rules),
      * showing thumbnail + audio preview + source text.
      *
-     * Note: we filter to rows that actually have an audio preview URL at render time,
-     * because backend filtering support may vary by deployment.
+     * Loads every matching row in batched API calls (no pagination in the UI).
+     * Stops at {@see self::METADATA_EXPORT_MAX_ROWS} with a truncation flag if the pool is larger.
      */
     public function searchVisibleAudio(Request $request)
     {
         try {
             $api = $this->getApiService();
 
-            $limit = max(1, min(200, (int) $request->input('limit', 50)));
-            $offset = max(0, (int) $request->input('offset', 0));
-
-            $filters = [
-                'limit' => $limit,
-                'offset' => $offset,
+            $baseFilters = [
                 'embedding_namespace' => 'v6_title_tags',
                 'fields' => implode(',', self::SEARCH_VISIBLE_AUDIO_FIELDS),
             ];
 
             if ($request->filled('category_for_ai')) {
-                $filters['category_for_ai'] = $request->input('category_for_ai');
+                $baseFilters['category_for_ai'] = $request->input('category_for_ai');
             }
             if ($request->filled('post_type')) {
-                $filters['post_type'] = $request->input('post_type');
+                $baseFilters['post_type'] = $request->input('post_type');
             }
             if ($request->filled('search')) {
-                $filters['search'] = $request->input('search');
+                $baseFilters['search'] = $request->input('search');
             }
 
-            $response = $api->getVideos($filters);
-            $rows = $response['videos'] ?? $response;
-            if (! is_array($rows)) {
-                $rows = [];
-            }
+            $allRows = [];
+            $walkOffset = 0;
+            $totalFromApi = null;
 
-            // Keep only videos that actually have audio preview content.
-            $videos = array_values(array_filter($rows, function ($v) {
-                if (! is_array($v)) {
-                    return false;
+            while (count($allRows) < self::METADATA_EXPORT_MAX_ROWS) {
+                $take = min(
+                    self::SEARCH_VISIBLE_AUDIO_FETCH_BATCH,
+                    self::METADATA_EXPORT_MAX_ROWS - count($allRows)
+                );
+                $filters = array_merge($baseFilters, [
+                    'limit' => $take,
+                    'offset' => $walkOffset,
+                ]);
+
+                $response = $api->getVideos($filters);
+                $rows = $response['videos'] ?? $response;
+                if (! is_array($rows)) {
+                    $rows = [];
                 }
-                $url = $v['audio_preview_url'] ?? null;
-                $text = $v['audio_preview_source_text'] ?? null;
-                return is_string($url) && $url !== '' && (is_string($text) ? trim($text) !== '' : true);
-            }));
+                if ($totalFromApi === null) {
+                    $totalFromApi = (int) ($response['total'] ?? count($rows));
+                }
 
-            $total = (int) ($response['total'] ?? count($rows));
-            $currentPage = (int) floor($offset / $limit) + 1;
-            $totalPages = $total > 0 ? (int) max(1, (int) ceil($total / $limit)) : 1;
+                foreach ($rows as $row) {
+                    if (is_array($row)) {
+                        $allRows[] = $row;
+                    }
+                }
+
+                if (count($rows) === 0) {
+                    break;
+                }
+                if (count($rows) < $take) {
+                    break;
+                }
+                $walkOffset += count($rows);
+                if ($totalFromApi > 0 && $walkOffset >= $totalFromApi) {
+                    break;
+                }
+                if (count($allRows) >= self::METADATA_EXPORT_MAX_ROWS) {
+                    break;
+                }
+            }
+
+            $truncated = ($totalFromApi ?? count($allRows)) > count($allRows);
+
+            $videos = $allRows;
+            usort($videos, function ($a, $b) {
+                $ta = is_array($a) ? (string) ($a['title'] ?? '') : '';
+                $tb = is_array($b) ? (string) ($b['title'] ?? '') : '';
+
+                return strnatcasecmp($ta, $tb);
+            });
 
             $categoriesForAi = [];
             try {
@@ -343,12 +375,9 @@ class VideoController extends Controller
 
             return view('videos.search-visible-audio', [
                 'videos' => $videos,
-                'rawCount' => count($rows),
-                'total' => $total,
-                'currentPage' => $currentPage,
-                'totalPages' => $totalPages,
-                'limit' => $limit,
-                'offset' => $offset,
+                'totalFromApi' => $totalFromApi ?? count($videos),
+                'truncated' => $truncated,
+                'maxRows' => self::METADATA_EXPORT_MAX_ROWS,
                 'categories_for_ai' => $categoriesForAi,
                 'filters' => [
                     'search' => $request->input('search', ''),
@@ -364,12 +393,9 @@ class VideoController extends Controller
 
             return view('videos.search-visible-audio', [
                 'videos' => [],
-                'rawCount' => 0,
-                'total' => 0,
-                'currentPage' => 1,
-                'totalPages' => 1,
-                'limit' => (int) $request->input('limit', 50),
-                'offset' => 0,
+                'totalFromApi' => 0,
+                'truncated' => false,
+                'maxRows' => self::METADATA_EXPORT_MAX_ROWS,
                 'categories_for_ai' => [],
                 'filters' => [
                     'search' => $request->input('search', ''),
