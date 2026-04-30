@@ -35,6 +35,18 @@ class VideoController extends Controller
     /** Max rows in a single “CSV · all matching” download. */
     private const METADATA_EXPORT_MAX_ROWS = 25000;
 
+    /** Fields needed for the “visible in search” audio list. */
+    private const SEARCH_VISIBLE_AUDIO_FIELDS = [
+        'id',
+        'title',
+        'thumbnail_url',
+        'category_for_ai',
+        'post_type',
+        'has_audio_preview',
+        'audio_preview_url',
+        'audio_preview_source_text',
+    ];
+
     public function __construct()
     {
         // API service will be initialized in each method
@@ -260,6 +272,111 @@ class VideoController extends Controller
                 'totalPages' => 1,
                 'filters' => [],
                 'error' => 'Unable to load videos. Please try again later.'
+            ]);
+        }
+    }
+
+    /**
+     * List videos that are eligible for the public Search API (v6_title_tags rules),
+     * showing thumbnail + audio preview + source text.
+     *
+     * Note: we filter to rows that actually have an audio preview URL at render time,
+     * because backend filtering support may vary by deployment.
+     */
+    public function searchVisibleAudio(Request $request)
+    {
+        try {
+            $api = $this->getApiService();
+
+            $limit = max(1, min(200, (int) $request->input('limit', 50)));
+            $offset = max(0, (int) $request->input('offset', 0));
+
+            $filters = [
+                'limit' => $limit,
+                'offset' => $offset,
+                'embedding_namespace' => 'v6_title_tags',
+                'fields' => implode(',', self::SEARCH_VISIBLE_AUDIO_FIELDS),
+            ];
+
+            if ($request->filled('category_for_ai')) {
+                $filters['category_for_ai'] = $request->input('category_for_ai');
+            }
+            if ($request->filled('post_type')) {
+                $filters['post_type'] = $request->input('post_type');
+            }
+            if ($request->filled('search')) {
+                $filters['search'] = $request->input('search');
+            }
+
+            $response = $api->getVideos($filters);
+            $rows = $response['videos'] ?? $response;
+            if (! is_array($rows)) {
+                $rows = [];
+            }
+
+            // Keep only videos that actually have audio preview content.
+            $videos = array_values(array_filter($rows, function ($v) {
+                if (! is_array($v)) {
+                    return false;
+                }
+                $url = $v['audio_preview_url'] ?? null;
+                $text = $v['audio_preview_source_text'] ?? null;
+                return is_string($url) && $url !== '' && (is_string($text) ? trim($text) !== '' : true);
+            }));
+
+            $total = (int) ($response['total'] ?? count($rows));
+            $currentPage = (int) floor($offset / $limit) + 1;
+            $totalPages = $total > 0 ? (int) max(1, (int) ceil($total / $limit)) : 1;
+
+            $categoriesForAi = [];
+            try {
+                $statsResponse = $api->getWordPressStats();
+                $categoriesForAi = $statsResponse['categories_for_ai'] ?? [];
+                if (is_array($categoriesForAi)) {
+                    ksort($categoriesForAi, SORT_NATURAL | SORT_FLAG_CASE);
+                }
+            } catch (\Exception $e) {
+                Log::warning('Search-visible audio list: could not load categories_for_ai options', [
+                    'error' => $e->getMessage(),
+                ]);
+            }
+
+            return view('videos.search-visible-audio', [
+                'videos' => $videos,
+                'rawCount' => count($rows),
+                'total' => $total,
+                'currentPage' => $currentPage,
+                'totalPages' => $totalPages,
+                'limit' => $limit,
+                'offset' => $offset,
+                'categories_for_ai' => $categoriesForAi,
+                'filters' => [
+                    'search' => $request->input('search', ''),
+                    'post_type' => $request->input('post_type', ''),
+                    'category_for_ai' => $request->input('category_for_ai', ''),
+                ],
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to load search-visible audio list', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return view('videos.search-visible-audio', [
+                'videos' => [],
+                'rawCount' => 0,
+                'total' => 0,
+                'currentPage' => 1,
+                'totalPages' => 1,
+                'limit' => (int) $request->input('limit', 50),
+                'offset' => 0,
+                'categories_for_ai' => [],
+                'filters' => [
+                    'search' => $request->input('search', ''),
+                    'post_type' => $request->input('post_type', ''),
+                    'category_for_ai' => $request->input('category_for_ai', ''),
+                ],
+                'error' => 'Unable to load videos: '.$e->getMessage(),
             ]);
         }
     }
