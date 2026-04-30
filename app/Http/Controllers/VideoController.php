@@ -41,6 +41,7 @@ class VideoController extends Controller
         'title',
         'thumbnail_url',
         'category_for_ai',
+        'content_tags',
         'post_type',
         'has_audio_preview',
         'audio_preview_url',

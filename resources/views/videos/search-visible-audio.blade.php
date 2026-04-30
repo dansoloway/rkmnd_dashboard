@@ -133,6 +133,19 @@
                                                 @if(!empty($video['category_for_ai']))
                                                     · AI category: <span class="font-medium">{{ $video['category_for_ai'] }}</span>
                                                 @endif
+                                                @if(!empty($video['content_tags']))
+                                                    @php
+                                                        $tagsVal = $video['content_tags'];
+                                                        if (is_array($tagsVal)) {
+                                                            $tagsText = implode(', ', array_values(array_filter($tagsVal, fn ($t) => is_string($t) && trim($t) !== '')));
+                                                        } else {
+                                                            $tagsText = is_string($tagsVal) ? $tagsVal : '';
+                                                        }
+                                                    @endphp
+                                                    @if(!empty($tagsText))
+                                                        · Tags: <span class="font-medium">{{ $tagsText }}</span>
+                                                    @endif
+                                                @endif
                                                 @if(!empty($video['post_type']))
                                                     · Type: <span class="font-medium">{{ $video['post_type'] }}</span>
                                                 @endif
@@ -142,12 +155,17 @@
                                 </td>
                                 <td class="px-4 py-4 w-96">
                                     @if(!empty($video['audio_preview_url']))
+                                        @php
+                                            // S3 uploads use Cache-Control max-age=86400; bust cache when script changes.
+                                            $audioCacheBuster = substr(md5((string)($video['audio_preview_source_text'] ?? '')), 0, 12);
+                                            $audioUrl = $video['audio_preview_url'] . (str_contains($video['audio_preview_url'], '?') ? '&' : '?') . 'v=' . $audioCacheBuster;
+                                        @endphp
                                         <audio controls preload="none" class="w-full">
-                                            <source src="{{ $video['audio_preview_url'] }}" type="audio/mpeg">
+                                            <source src="{{ $audioUrl }}" type="audio/mpeg">
                                             Your browser does not support the audio element.
                                         </audio>
                                         <div class="mt-2">
-                                            <a href="{{ $video['audio_preview_url'] }}" target="_blank" rel="noopener"
+                                            <a href="{{ $audioUrl }}" target="_blank" rel="noopener"
                                                class="text-xs text-blue-600 hover:underline break-all">
                                                 Open audio file
                                             </a>
