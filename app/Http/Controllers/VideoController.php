@@ -479,6 +479,32 @@ class VideoController extends Controller
     }
 
     /**
+     * Save edited audio script and regenerate preview via AI pipeline (S3 + DB + v6 when eligible).
+     */
+    public function updateAudioScript(Request $request, int $id)
+    {
+        $request->validate([
+            'source_text' => 'required|string|max:64000',
+        ]);
+
+        try {
+            $api = $this->getApiService();
+            $api->regenerateAudioPreviewFromScript($id, $request->input('source_text'));
+
+            return redirect()->back()
+                ->with('success', 'Audio script saved and a new preview file was generated.');
+        } catch (\Exception $e) {
+            Log::error('Failed to regenerate audio preview', [
+                'video_id' => $id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return redirect()->back()
+                ->with('error', 'Regeneration failed: '.$e->getMessage());
+        }
+    }
+
+    /**
      * Get audio preview URL (AJAX endpoint)
      */
     public function getAudioPreview(int $id)

@@ -229,6 +229,39 @@ class BackendApiService
         throw new Exception("API request failed: {$response->status()}");
     }
 
+    /**
+     * Regenerate audio preview from edited script (ElevenLabs → S3 → DB → v6 Pinecone when eligible).
+     *
+     * @return array<string, mixed>
+     */
+    public function regenerateAudioPreviewFromScript(int $videoId, string $sourceText): array
+    {
+        $response = Http::timeout(300)
+            ->withToken($this->apiKey)
+            ->asJson()
+            ->post($this->baseUrl . "/api/v1/wordpress/videos/{$videoId}/audio-preview/regenerate", [
+                'source_text' => $sourceText,
+            ]);
+
+        if ($response->successful()) {
+            return $response->json();
+        }
+
+        $body = $response->json();
+        $detail = $body['detail'] ?? $response->body();
+        if (is_array($detail)) {
+            $detail = json_encode($detail);
+        }
+
+        Log::error('Backend API: regenerate audio preview failed', [
+            'video_id' => $videoId,
+            'status' => $response->status(),
+            'body' => $response->body(),
+        ]);
+
+        throw new Exception("API request failed: {$response->status()} — {$detail}");
+    }
+
     // ==========================================
     // S3 / AUDIO PREVIEW ENDPOINTS
     // ==========================================

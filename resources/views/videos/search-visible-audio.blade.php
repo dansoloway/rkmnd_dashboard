@@ -39,6 +39,16 @@
             <p class="text-red-800">{{ $error }}</p>
         </div>
     @endif
+    @if(session('success'))
+        <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+            <p class="text-green-800">{{ session('success') }}</p>
+        </div>
+    @endif
+    @if(session('error'))
+        <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+            <p class="text-red-800">{{ session('error') }}</p>
+        </div>
+    @endif
 
     <div class="bg-white rounded-lg shadow-sm p-6">
         <form method="GET" action="{{ route('videos.search-visible-audio') }}" class="space-y-4">
@@ -146,17 +156,27 @@
                                         <span class="text-sm text-gray-500">No audio preview URL</span>
                                     @endif
                                 </td>
-                                <td class="px-4 py-4">
-                                    @php
-                                        $text = $video['audio_preview_source_text'] ?? '';
-                                    @endphp
-                                    @if(is_string($text) && trim($text) !== '')
-                                        <div class="text-sm text-gray-900 whitespace-pre-wrap max-w-3xl">
-                                            {{ $text }}
-                                        </div>
-                                    @else
-                                        <span class="text-sm text-gray-500">No audio script text</span>
-                                    @endif
+                                <td class="px-4 py-4 min-w-[20rem] max-w-3xl">
+                                    <form method="POST" action="{{ route('videos.update-audio-script', $video['id']) }}" class="space-y-2">
+                                        @csrf
+                                        <label for="source_text_{{ $video['id'] }}" class="sr-only">Audio script for video {{ $video['id'] }}</label>
+                                        <textarea
+                                            id="source_text_{{ $video['id'] }}"
+                                            name="source_text"
+                                            rows="8"
+                                            required
+                                            class="w-full text-sm text-gray-900 border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 font-sans"
+                                            placeholder="Script read by text-to-speech…"
+                                        >{{ $video['audio_preview_source_text'] ?? '' }}</textarea>
+                                        <p class="text-xs text-gray-500">
+                                            Saves to the pipeline DB, overwrites the MP3 on S3, and refreshes public search metadata when the video is v6-eligible.
+                                            Allowed <code class="bg-gray-100 px-0.5 rounded">category_for_ai</code>: MBR Class, DVD Segment, BBB Exercise.
+                                        </p>
+                                        <button type="submit"
+                                                class="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1">
+                                            Save &amp; regenerate audio
+                                        </button>
+                                    </form>
                                 </td>
                             </tr>
                         @endforeach
