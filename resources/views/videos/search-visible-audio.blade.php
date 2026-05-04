@@ -7,7 +7,7 @@
             <h1 class="text-3xl font-heading font-bold text-gray-900">Search-visible videos with audio</h1>
             <p class="mt-2 text-gray-600">
                 Shows videos eligible for the public Search API pool (<code class="text-xs bg-gray-100 px-1 rounded">v6_title_tags</code> rules),
-                with thumbnail, audio script text, and the audio preview file.
+                with WordPress post tags (embedded as <code class="text-xs bg-gray-100 px-1 rounded">content_tags</code>), thumbnail, audio preview, and script.
             </p>
             <p class="mt-2 text-sm text-gray-600">
                 Loads every matching row in one list (no pagination). Showing <strong>{{ number_format(count($videos ?? [])) }}</strong>
@@ -104,12 +104,29 @@
                     <thead class="bg-gray-50">
                         <tr>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Video</th>
+                            <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-64">Post tags</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Audio</th>
                             <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Audio script</th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
                         @foreach($videos as $video)
+                            @php
+                                $contentTagsRaw = $video['content_tags'] ?? null;
+                                $postTagsList = [];
+                                if (is_array($contentTagsRaw)) {
+                                    foreach ($contentTagsRaw as $t) {
+                                        if (is_string($t) && trim($t) !== '') {
+                                            $postTagsList[] = trim($t);
+                                        }
+                                    }
+                                } elseif (is_string($contentTagsRaw) && trim($contentTagsRaw) !== '') {
+                                    $postTagsList = array_values(array_filter(array_map(
+                                        'trim',
+                                        preg_split('/\s*,\s*/', $contentTagsRaw) ?: []
+                                    )));
+                                }
+                            @endphp
                             <tr class="align-top hover:bg-gray-50">
                                 <td class="px-4 py-4 w-80">
                                     <div class="flex gap-3">
@@ -133,25 +150,26 @@
                                                 @if(!empty($video['category_for_ai']))
                                                     · AI category: <span class="font-medium">{{ $video['category_for_ai'] }}</span>
                                                 @endif
-                                                @if(!empty($video['content_tags']))
-                                                    @php
-                                                        $tagsVal = $video['content_tags'];
-                                                        if (is_array($tagsVal)) {
-                                                            $tagsText = implode(', ', array_values(array_filter($tagsVal, fn ($t) => is_string($t) && trim($t) !== '')));
-                                                        } else {
-                                                            $tagsText = is_string($tagsVal) ? $tagsVal : '';
-                                                        }
-                                                    @endphp
-                                                    @if(!empty($tagsText))
-                                                        · Tags: <span class="font-medium">{{ $tagsText }}</span>
-                                                    @endif
-                                                @endif
                                                 @if(!empty($video['post_type']))
                                                     · Type: <span class="font-medium">{{ $video['post_type'] }}</span>
                                                 @endif
                                             </div>
                                         </div>
                                     </div>
+                                </td>
+                                <td class="px-4 py-4 w-64 max-w-xs align-top">
+                                    @if(count($postTagsList) > 0)
+                                        <div class="flex flex-wrap gap-1.5">
+                                            @foreach($postTagsList as $tag)
+                                                <span class="inline-flex items-center rounded-full bg-slate-100 text-slate-800 px-2.5 py-0.5 text-xs font-medium border border-slate-200/80">
+                                                    {{ $tag }}
+                                                </span>
+                                            @endforeach
+                                        </div>
+                                    @else
+                                        <span class="text-sm text-gray-400">—</span>
+                                        <span class="sr-only">No post tags in pipeline DB</span>
+                                    @endif
                                 </td>
                                 <td class="px-4 py-4 w-96">
                                     @if(!empty($video['audio_preview_url']))
