@@ -425,6 +425,22 @@ class VideoController extends Controller
             // The API returns a nested structure: {status, video, embeddings, audio_previews}
             $video = $response['video'] ?? $response;
             $embeddings = $response['embeddings'] ?? [];
+            if (is_array($embeddings) && count($embeddings) > 1) {
+                usort($embeddings, function ($a, $b) {
+                    $va = (($a['namespace'] ?? '') === 'v6_title_tags') ? 0 : 1;
+                    $vb = (($b['namespace'] ?? '') === 'v6_title_tags') ? 0 : 1;
+                    if ($va !== $vb) {
+                        return $va <=> $vb;
+                    }
+                    $na = (string) ($a['namespace'] ?? '');
+                    $nb = (string) ($b['namespace'] ?? '');
+                    if ($na !== $nb) {
+                        return $na <=> $nb;
+                    }
+
+                    return (int) ($a['id'] ?? 0) <=> (int) ($b['id'] ?? 0);
+                });
+            }
             $audioPreviews = $response['audio_previews'] ?? [];
 
             // Get related videos

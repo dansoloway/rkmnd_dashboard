@@ -233,34 +233,100 @@
                 
                 <!-- Embeddings -->
                 @if(!empty($embeddings))
-                    <div class="mb-6">
+                    <div class="mb-6" id="embedding-section">
                         <div class="flex items-center justify-between mb-2">
                             <h4 class="text-sm font-medium text-gray-700">Vector Embeddings</h4>
                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                                 ✓ Generated
                             </span>
                         </div>
-                        @foreach($embeddings as $embedding)
-                            <div class="bg-gray-50 rounded-lg p-3 text-xs space-y-1">
-                                <div class="flex justify-between">
-                                    <span class="text-gray-500">Namespace:</span>
-                                    <span class="font-mono text-gray-900">{{ $embedding['namespace'] ?? 'N/A' }}</span>
+
+                        <label for="embedding-picker" class="block text-xs font-medium text-gray-600 mb-1">Embedding</label>
+                        <select id="embedding-picker" name="embedding-picker"
+                                class="w-full max-w-xl text-sm border border-gray-300 rounded-md px-3 py-2 mb-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white">
+                            @foreach($embeddings as $idx => $embedding)
+                                <option value="{{ $idx }}" @if($idx === 0) selected @endif>
+                                    {{ $embedding['namespace'] ?? 'N/A' }}
+                                    @if(!empty($embedding['embedding_scheme']))
+                                        · {{ $embedding['embedding_scheme'] }}
+                                    @endif
+                                </option>
+                            @endforeach
+                        </select>
+
+                        @foreach($embeddings as $idx => $embedding)
+                            <div class="embedding-detail-panel border border-gray-200 rounded-lg p-4 text-xs space-y-3 bg-gray-50 {{ $idx === 0 ? '' : 'hidden' }}"
+                                 data-embedding-panel="{{ $idx }}">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    <div class="flex justify-between gap-2">
+                                        <span class="text-gray-500 shrink-0">Namespace</span>
+                                        <span class="font-mono text-gray-900 text-right break-all">{{ $embedding['namespace'] ?? 'N/A' }}</span>
+                                    </div>
+                                    <div class="flex justify-between gap-2">
+                                        <span class="text-gray-500 shrink-0">Scheme</span>
+                                        <span class="text-gray-900 text-right">{{ $embedding['embedding_scheme'] ?? 'N/A' }}</span>
+                                    </div>
+                                    <div class="flex justify-between gap-2 sm:col-span-2">
+                                        <span class="text-gray-500 shrink-0">Pinecone ID</span>
+                                        <span class="font-mono text-gray-900 text-right break-all">{{ $embedding['pinecone_id'] ?? 'N/A' }}</span>
+                                    </div>
+                                    <div class="flex justify-between gap-2">
+                                        <span class="text-gray-500 shrink-0">Created</span>
+                                        <span class="text-gray-900">{{ !empty($embedding['created_at']) ? date('M d, Y g:i A', strtotime($embedding['created_at'])) : 'N/A' }}</span>
+                                    </div>
+                                    <div class="flex justify-between gap-2">
+                                        <span class="text-gray-500 shrink-0">Updated</span>
+                                        <span class="text-gray-900">{{ !empty($embedding['updated_at']) ? date('M d, Y g:i A', strtotime($embedding['updated_at'])) : 'N/A' }}</span>
+                                    </div>
                                 </div>
-                                <div class="flex justify-between">
-                                    <span class="text-gray-500">Scheme:</span>
-                                    <span class="text-gray-900">{{ $embedding['embedding_scheme'] ?? 'N/A' }}</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span class="text-gray-500">Pinecone ID:</span>
-                                    <span class="font-mono text-gray-900">{{ $embedding['pinecone_id'] ?? 'N/A' }}</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span class="text-gray-500">Created:</span>
-                                    <span class="text-gray-900">{{ !empty($embedding['created_at']) ? date('M d, Y', strtotime($embedding['created_at'])) : 'N/A' }}</span>
+
+                                @if(!empty($embedding['embedding_fields']))
+                                    <div>
+                                        <span class="text-gray-500 block mb-1.5">Fields embedded</span>
+                                        @if(is_array($embedding['embedding_fields']))
+                                            <div class="flex flex-wrap gap-1.5">
+                                                @foreach($embedding['embedding_fields'] as $field)
+                                                    <span class="inline-flex items-center rounded-full bg-blue-50 text-blue-900 px-2.5 py-0.5 text-xs font-medium border border-blue-100">{{ is_scalar($field) ? $field : json_encode($field) }}</span>
+                                                @endforeach
+                                            </div>
+                                        @else
+                                            <code class="block text-xs bg-white border rounded p-2 break-all">{{ $embedding['embedding_fields'] }}</code>
+                                        @endif
+                                    </div>
+                                @endif
+
+                                <div>
+                                    <span class="text-gray-500 block mb-1.5">Text embedded (exact input to the model)</span>
+                                    @if(!empty($embedding['embedding_text']))
+                                        <pre class="whitespace-pre-wrap break-words text-xs text-gray-900 bg-white border border-gray-200 rounded p-3 max-h-96 overflow-auto font-mono">{{ $embedding['embedding_text'] }}</pre>
+                                    @else
+                                        <p class="text-gray-400 italic">No embedding text stored for this row.</p>
+                                    @endif
                                 </div>
                             </div>
                         @endforeach
                     </div>
+
+                    <script>
+                        (function () {
+                            var sel = document.getElementById('embedding-picker');
+                            if (!sel) return;
+                            function showPanel(index) {
+                                document.querySelectorAll('#embedding-section [data-embedding-panel]').forEach(function (el) {
+                                    var on = String(el.getAttribute('data-embedding-panel')) === String(index);
+                                    if (on) {
+                                        el.classList.remove('hidden');
+                                    } else {
+                                        el.classList.add('hidden');
+                                    }
+                                });
+                            }
+                            sel.addEventListener('change', function () {
+                                showPanel(sel.value);
+                            });
+                            showPanel(sel.value);
+                        })();
+                    </script>
                 @else
                     <div class="mb-6">
                         <div class="flex items-center justify-between mb-2">
