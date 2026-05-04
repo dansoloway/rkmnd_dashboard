@@ -244,7 +244,27 @@
                         <p class="text-xs text-gray-500 mb-2">
                             Default selection is the Pinecone namespace used by <code class="bg-gray-100 px-1 rounded">POST /api/v1/search</code> when the client omits <code class="bg-gray-100 px-1 rounded">namespace</code>
                             (<span class="font-mono">{{ $defaultSearchNamespace ?? config('backend.default_search_namespace') }}</span>).
+                            The dropdown only includes rows stored in <code class="bg-gray-100 px-1 rounded">video_embeddings</code> (not every Pinecone namespace).
                         </p>
+                        @php
+                            $searchNsExplain = $defaultSearchNamespace ?? config('backend.default_search_namespace', 'v6_title_tags');
+                            $hasSearchEmbeddingRow = false;
+                            foreach ($embeddings as $e) {
+                                if (($e['namespace'] ?? '') === $searchNsExplain) {
+                                    $hasSearchEmbeddingRow = true;
+                                    break;
+                                }
+                            }
+                        @endphp
+                        @if(!$hasSearchEmbeddingRow)
+                            <div class="mb-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-950">
+                                <p class="font-medium">No <code class="bg-amber-100/80 px-1 rounded font-mono">{{ $searchNsExplain }}</code> embedding row for this video.</p>
+                                <p class="mt-1.5 leading-relaxed text-amber-900/95">
+                                    So you only see tenant embeddings (e.g. <code class="bg-amber-100/80 px-1 rounded font-mono">tenant_1_comprehensive</code> or <code class="bg-amber-100/80 px-1 rounded font-mono">tenant_1_tenant_comprehensive</code>).
+                                    To get a public-search row, the post must be eligible (published <code class="bg-amber-100/80 px-1 rounded">video</code>, JW Player id, allowed <code class="bg-amber-100/80 px-1 rounded">category_for_ai</code>), then run your usual sync / processing or backfill <code class="bg-amber-100/80 px-1 rounded">v6_title_tags</code> on the AI pipeline server.
+                                </p>
+                            </div>
+                        @endif
                         <label for="embedding-picker" class="block text-xs font-medium text-gray-600 mb-1">Embedding</label>
                         <select id="embedding-picker" name="embedding-picker"
                                 class="w-full max-w-xl text-sm border border-gray-300 rounded-md px-3 py-2 mb-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white">
