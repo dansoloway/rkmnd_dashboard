@@ -241,6 +241,8 @@
                             </span>
                         </div>
 
+                        @include('videos.partials.computed-v6-embedding-preview')
+
                         <p class="text-xs text-gray-500 mb-2">
                             Default selection is the Pinecone namespace used by <code class="bg-gray-100 px-1 rounded">POST /api/v1/search</code> when the client omits <code class="bg-gray-100 px-1 rounded">namespace</code>
                             (<span class="font-mono">{{ $defaultSearchNamespace ?? config('backend.default_search_namespace') }}</span>).
@@ -319,6 +321,19 @@
                                     </div>
                                 @endif
 
+                                @php
+                                    $driftNs = $defaultSearchNamespace ?? config('backend.default_search_namespace', 'v6_title_tags');
+                                    $storedTxt = trim((string) ($embedding['embedding_text'] ?? ''));
+                                    $computedTxt = trim((string) ($computedV6EmbeddingText ?? ''));
+                                    $showDrift = (($embedding['namespace'] ?? '') === $driftNs)
+                                        && $storedTxt !== ''
+                                        && $computedTxt !== ''
+                                        && $storedTxt !== $computedTxt;
+                                @endphp
+                                @if($showDrift)
+                                    <p class="text-xs text-gray-500 italic">Stored snapshot differs from the computed preview above (metadata may have changed since upsert).</p>
+                                @endif
+
                                 <div>
                                     <span class="text-gray-500 block mb-1.5">Text embedded (exact input to the model)</span>
                                     @if(!empty($embedding['embedding_text']))
@@ -359,6 +374,7 @@
                                 ⏳ Pending
                             </span>
                         </div>
+                        @include('videos.partials.computed-v6-embedding-preview')
                         <p class="text-xs text-gray-500">No embeddings generated yet</p>
                     </div>
                 @endif

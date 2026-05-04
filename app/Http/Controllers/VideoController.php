@@ -424,6 +424,11 @@ class VideoController extends Controller
             
             // The API returns a nested structure: {status, video, embeddings, audio_previews, default_search_namespace}
             $defaultSearchNamespace = $response['default_search_namespace'] ?? config('backend.default_search_namespace', 'v6_title_tags');
+            $computedV6EmbeddingText = $response['computed_v6_embedding_text'] ?? '';
+            $computedV6EmbeddingFields = $response['computed_v6_embedding_fields'] ?? [];
+            if (! is_array($computedV6EmbeddingFields)) {
+                $computedV6EmbeddingFields = [];
+            }
             $video = $response['video'] ?? $response;
             $embeddings = $response['embeddings'] ?? [];
             if (is_array($embeddings) && count($embeddings) > 1) {
@@ -471,7 +476,7 @@ class VideoController extends Controller
                 $audioUrl = $audioPreview['s3_url'] ?? null;
             }
 
-            return view('videos.show', compact('video', 'embeddings', 'audioPreviews', 'relatedVideos', 'audioUrl', 'defaultSearchNamespace', 'defaultEmbeddingIndex'));
+            return view('videos.show', compact('video', 'embeddings', 'audioPreviews', 'relatedVideos', 'audioUrl', 'defaultSearchNamespace', 'defaultEmbeddingIndex', 'computedV6EmbeddingText', 'computedV6EmbeddingFields'));
 
         } catch (\Exception $e) {
             Log::error('Failed to load video', [
