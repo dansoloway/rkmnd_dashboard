@@ -16,6 +16,12 @@ return [
     'timeout' => env('BACKEND_API_TIMEOUT', 30),
     
     'default_api_key' => env('TENANT_DEFAULT_API_KEY', ''),
+
+    /*
+    | Must match POST /api/v1/search default when request omits "namespace".
+    | Video detail UI uses this if the API response has no default_search_namespace key.
+    */
+    'default_search_namespace' => env('BACKEND_DEFAULT_SEARCH_NAMESPACE', 'v6_title_tags'),
     
     'endpoints' => [
         'wordpress' => [

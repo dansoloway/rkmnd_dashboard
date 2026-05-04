@@ -422,13 +422,14 @@ class VideoController extends Controller
             // Get full video details including embeddings and audio
             $response = $api->getVideoById($id);
             
-            // The API returns a nested structure: {status, video, embeddings, audio_previews}
+            // The API returns a nested structure: {status, video, embeddings, audio_previews, default_search_namespace}
+            $defaultSearchNamespace = $response['default_search_namespace'] ?? config('backend.default_search_namespace', 'v6_title_tags');
             $video = $response['video'] ?? $response;
             $embeddings = $response['embeddings'] ?? [];
             if (is_array($embeddings) && count($embeddings) > 1) {
-                usort($embeddings, function ($a, $b) {
-                    $va = (($a['namespace'] ?? '') === 'v6_title_tags') ? 0 : 1;
-                    $vb = (($b['namespace'] ?? '') === 'v6_title_tags') ? 0 : 1;
+                usort($embeddings, function ($a, $b) use ($defaultSearchNamespace) {
+                    $va = (($a['namespace'] ?? '') === $defaultSearchNamespace) ? 0 : 1;
+                    $vb = (($b['namespace'] ?? '') === $defaultSearchNamespace) ? 0 : 1;
                     if ($va !== $vb) {
                         return $va <=> $vb;
                     }
@@ -441,6 +442,17 @@ class VideoController extends Controller
                     return (int) ($a['id'] ?? 0) <=> (int) ($b['id'] ?? 0);
                 });
             }
+
+            $defaultEmbeddingIndex = 0;
+            if (is_array($embeddings)) {
+                foreach ($embeddings as $idx => $emb) {
+                    if (($emb['namespace'] ?? '') === $defaultSearchNamespace) {
+                        $defaultEmbeddingIndex = $idx;
+                        break;
+                    }
+                }
+            }
+
             $audioPreviews = $response['audio_previews'] ?? [];
 
             // Get related videos
@@ -459,7 +471,7 @@ class VideoController extends Controller
                 $audioUrl = $audioPreview['s3_url'] ?? null;
             }
 
-            return view('videos.show', compact('video', 'embeddings', 'audioPreviews', 'relatedVideos', 'audioUrl'));
+            return view('videos.show', compact('video', 'embeddings', 'audioPreviews', 'relatedVideos', 'audioUrl', 'defaultSearchNamespace', 'defaultEmbeddingIndex'));
 
         } catch (\Exception $e) {
             Log::error('Failed to load video', [

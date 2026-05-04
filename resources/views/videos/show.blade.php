@@ -241,11 +241,15 @@
                             </span>
                         </div>
 
+                        <p class="text-xs text-gray-500 mb-2">
+                            Default selection is the Pinecone namespace used by <code class="bg-gray-100 px-1 rounded">POST /api/v1/search</code> when the client omits <code class="bg-gray-100 px-1 rounded">namespace</code>
+                            (<span class="font-mono">{{ $defaultSearchNamespace ?? config('backend.default_search_namespace') }}</span>).
+                        </p>
                         <label for="embedding-picker" class="block text-xs font-medium text-gray-600 mb-1">Embedding</label>
                         <select id="embedding-picker" name="embedding-picker"
                                 class="w-full max-w-xl text-sm border border-gray-300 rounded-md px-3 py-2 mb-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white">
                             @foreach($embeddings as $idx => $embedding)
-                                <option value="{{ $idx }}" @if($idx === 0) selected @endif>
+                                <option value="{{ $idx }}" @if($idx === ($defaultEmbeddingIndex ?? 0)) selected @endif>
                                     {{ $embedding['namespace'] ?? 'N/A' }}
                                     @if(!empty($embedding['embedding_scheme']))
                                         · {{ $embedding['embedding_scheme'] }}
@@ -255,7 +259,7 @@
                         </select>
 
                         @foreach($embeddings as $idx => $embedding)
-                            <div class="embedding-detail-panel border border-gray-200 rounded-lg p-4 text-xs space-y-3 bg-gray-50 {{ $idx === 0 ? '' : 'hidden' }}"
+                            <div class="embedding-detail-panel border border-gray-200 rounded-lg p-4 text-xs space-y-3 bg-gray-50 {{ $idx === ($defaultEmbeddingIndex ?? 0) ? '' : 'hidden' }}"
                                  data-embedding-panel="{{ $idx }}">
                                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                     <div class="flex justify-between gap-2">
