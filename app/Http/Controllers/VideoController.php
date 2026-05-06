@@ -21,6 +21,7 @@ class VideoController extends Controller
         'video_body_area_taxonomy', 'sync_status', 'error_message', 'last_processed',
         'wp_created', 'wp_modified', 'created_at', 'updated_at', 'tenant_id',
         'has_embedding', 'has_audio_preview', 'embedding_count',
+        'embedding_namespaces', 'eligible_v6_title_tags', 'has_embedding_row_v6_title_tags',
         'audio_preview_duration_seconds', 'audio_preview_status',
         'audio_preview_url', 'audio_preview_source_text',
     ];
@@ -91,6 +92,7 @@ class VideoController extends Controller
             ],
             'Embeddings and audio' => [
                 'has_embedding', 'has_audio_preview', 'embedding_count',
+                'embedding_namespaces', 'eligible_v6_title_tags', 'has_embedding_row_v6_title_tags',
                 'audio_preview_duration_seconds', 'audio_preview_status',
                 'audio_preview_url', 'audio_preview_source_text',
             ],

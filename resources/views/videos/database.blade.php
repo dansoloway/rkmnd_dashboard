@@ -18,6 +18,14 @@
                 <code class="text-xs bg-gray-100 px-1 rounded">v6_title_tags</code> pipeline (published <code class="text-xs bg-gray-100 px-1 rounded">video</code>, JW Player id, allowed category for AI).
                 Add columns <code class="text-xs bg-gray-100 px-1 rounded">thumbnail_url</code>, <code class="text-xs bg-gray-100 px-1 rounded">audio_preview_url</code>, and <code class="text-xs bg-gray-100 px-1 rounded">audio_preview_source_text</code> (same DB field as “Audio Script” on the video detail page).
             </p>
+            <p class="mt-2 text-sm text-gray-600">
+                <strong>Embedding columns:</strong>
+                <em>Eligible V6 Title Tags</em> matches the “Public AI search pool only” filter and
+                <code class="text-xs bg-gray-100 px-1 rounded">embedding_namespace=v6_title_tags</code>.
+                <em>Has Embedding Row V6 Title Tags</em> is true when there is a bookkeeping row in
+                <code class="text-xs bg-gray-100 px-1 rounded">video_embeddings</code> for that namespace (Pinecone presence is not guaranteed).
+                <em>Embedding Namespaces</em> lists namespaces from those rows—use with filters to spot missing tenant namespaces (DB-only; no Pinecone scan).
+            </p>
         </div>
         <a href="{{ route('videos.index') }}" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition whitespace-nowrap">
             Back to Video Library
