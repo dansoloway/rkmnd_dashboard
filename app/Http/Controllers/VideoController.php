@@ -566,6 +566,144 @@ class VideoController extends Controller
     }
 
     /**
+     * Pinecone vs DB reconcile (AI pipeline GET /api/v1/wordpress/embeddings/reconcile).
+     */
+    public function embeddingReconcile(Request $request)
+    {
+        $defaultNs = config('backend.default_search_namespace', 'v6_title_tags');
+        $filters = [
+            'namespace' => $request->input('namespace', $defaultNs),
+            'list_limit' => min(100, max(1, (int) $request->input('list_limit', 100))),
+            'allow_categories' => $request->input('allow_categories', ''),
+            'post_status' => $request->input('post_status', ''),
+            'post_type' => $request->input('post_type', ''),
+            'max_missing' => min(50_000, max(1, (int) $request->input('max_missing', 500))),
+            'max_orphans' => min(50_000, max(1, (int) $request->input('max_orphans', 500))),
+            'max_unexpected' => min(50_000, max(1, (int) $request->input('max_unexpected', 500))),
+        ];
+
+        $run = $request->boolean('run');
+        $payload = null;
+        $error = null;
+        $tableRows = [];
+
+        if ($run) {
+            try {
+                $api = $this->getApiService();
+                $query = [
+                    'namespace' => $filters['namespace'],
+                    'list_limit' => $filters['list_limit'],
+                    'max_missing' => $filters['max_missing'],
+                    'max_orphans' => $filters['max_orphans'],
+                    'max_unexpected' => $filters['max_unexpected'],
+                ];
+                if ($filters['allow_categories'] !== '') {
+                    $query['allow_categories'] = $filters['allow_categories'];
+                }
+                if ($filters['post_status'] !== '') {
+                    $query['post_status'] = $filters['post_status'];
+                }
+                if ($filters['post_type'] !== '') {
+                    $query['post_type'] = $filters['post_type'];
+                }
+
+                $payload = $api->getEmbeddingReconcile($query);
+                $tableRows = $this->buildEmbeddingReconcileTableRows($payload);
+            } catch (\Exception $e) {
+                Log::error('Embedding reconcile failed', [
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString(),
+                ]);
+                $error = $e->getMessage();
+            }
+        }
+
+        return view('videos.embeddings-reconcile', [
+            'filters' => $filters,
+            'payload' => $payload,
+            'tableRows' => $tableRows,
+            'error' => $error,
+            'ran' => $run,
+        ]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     * @return list<array<string, mixed>>
+     */
+    private function buildEmbeddingReconcileTableRows(array $payload): array
+    {
+        $rows = [];
+        $statusOrder = [
+            'missing_from_pinecone' => 0,
+            'pinecone_not_in_db' => 1,
+            'unexpected_in_index' => 2,
+        ];
+
+        foreach ($payload['missing_from_pinecone'] ?? [] as $r) {
+            if (! is_array($r)) {
+                continue;
+            }
+            $rows[] = [
+                'status' => 'missing_from_pinecone',
+                'status_label' => 'Missing from Pinecone',
+                'jwp_id' => (string) ($r['jwp_id'] ?? ''),
+                'wp_post_id' => $r['wp_post_id'] ?? '',
+                'title' => (string) ($r['title'] ?? ''),
+                'category_for_ai' => (string) ($r['category_for_ai'] ?? ''),
+                'post_status' => (string) ($r['post_status'] ?? ''),
+                'post_type' => (string) ($r['post_type'] ?? ''),
+                'reason' => '',
+            ];
+        }
+        foreach ($payload['pinecone_not_in_db'] ?? [] as $r) {
+            if (! is_array($r)) {
+                continue;
+            }
+            $rows[] = [
+                'status' => 'pinecone_not_in_db',
+                'status_label' => 'Pinecone not in DB',
+                'jwp_id' => (string) ($r['jwp_id'] ?? ''),
+                'wp_post_id' => '',
+                'title' => '',
+                'category_for_ai' => '',
+                'post_status' => '',
+                'post_type' => '',
+                'reason' => '',
+            ];
+        }
+        foreach ($payload['pinecone_unexpected'] ?? [] as $r) {
+            if (! is_array($r)) {
+                continue;
+            }
+            $rows[] = [
+                'status' => 'unexpected_in_index',
+                'status_label' => 'Unexpected in index',
+                'jwp_id' => (string) ($r['jwp_id'] ?? ''),
+                'wp_post_id' => $r['wp_post_id'] ?? '',
+                'title' => (string) ($r['title'] ?? ''),
+                'category_for_ai' => (string) ($r['category_for_ai'] ?? ''),
+                'post_status' => (string) ($r['post_status'] ?? ''),
+                'post_type' => (string) ($r['post_type'] ?? ''),
+                'reason' => (string) ($r['reason'] ?? ''),
+            ];
+        }
+
+        usort($rows, function ($a, $b) use ($statusOrder) {
+            $oa = $statusOrder[$a['status']] ?? 99;
+            $ob = $statusOrder[$b['status']] ?? 99;
+            if ($oa !== $ob) {
+                return $oa <=> $ob;
+            }
+            $ja = strnatcasecmp((string) ($a['jwp_id'] ?? ''), (string) ($b['jwp_id'] ?? ''));
+
+            return $ja;
+        });
+
+        return $rows;
+    }
+
+    /**
      * Column-filterable view of pipeline video rows (GET /api/v1/wordpress/videos?fields=...).
      */
     public function database(Request $request)

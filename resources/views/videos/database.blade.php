@@ -26,6 +26,10 @@
                 <code class="text-xs bg-gray-100 px-1 rounded">video_embeddings</code> for that namespace (Pinecone presence is not guaranteed).
                 <em>Embedding Namespaces</em> lists namespaces from those rows—use with filters to spot missing tenant namespaces (DB-only; no Pinecone scan).
             </p>
+            <p class="mt-2 text-sm text-gray-600">
+                <a href="{{ route('videos.embeddings-reconcile') }}" class="text-blue-700 hover:underline font-medium">Full Pinecone vs DB reconcile</a>
+                (live Pinecone list + same rules as the compare script; may take a few minutes).
+            </p>
         </div>
         <a href="{{ route('videos.index') }}" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition whitespace-nowrap">
             Back to Video Library

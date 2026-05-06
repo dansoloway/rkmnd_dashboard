@@ -25,13 +25,18 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/videos/search-visible-audio', [App\Http\Controllers\VideoController::class, 'searchVisibleAudio'])->name('videos.search-visible-audio');
     Route::post('/videos/{id}/audio-script', [App\Http\Controllers\VideoController::class, 'updateAudioScript'])->name('videos.update-audio-script');
     Route::get('/videos/database', [App\Http\Controllers\VideoController::class, 'database'])->name('videos.database');
+    Route::get('/videos/embeddings-reconcile', [App\Http\Controllers\VideoController::class, 'embeddingReconcile'])->name('videos.embeddings-reconcile');
     Route::get('/videos/database/export', [App\Http\Controllers\VideoController::class, 'databaseExport'])->name('videos.database-export');
     Route::get('/videos/{id}', [App\Http\Controllers\VideoController::class, 'show'])->name('videos.show');
     Route::post('/videos/{id}/thumbnail', [App\Http\Controllers\VideoController::class, 'updateThumbnail'])->name('videos.update-thumbnail');
     
     // Query AI Pipeline
     Route::get('/query', [App\Http\Controllers\QueryController::class, 'index'])->name('query.index');
-    
+
+    // Semantic search (POST /api/v1/search playground)
+    Route::get('/ai-search', [App\Http\Controllers\AiSearchController::class, 'index'])->name('ai-search.index');
+    Route::post('/ai-search', [App\Http\Controllers\AiSearchController::class, 'search'])->name('ai-search.search');
+
     // Analytics
     Route::get('/analytics', [App\Http\Controllers\AnalyticsController::class, 'index'])->name('analytics.index');
     

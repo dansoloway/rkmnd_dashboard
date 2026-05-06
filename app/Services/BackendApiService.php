@@ -157,6 +157,48 @@ class BackendApiService
     }
 
     /**
+     * Pinecone vs DB reconcile (read-only; can take minutes for large namespaces).
+     * No cache. Uses extended HTTP timeout.
+     *
+     * @param  array<string, mixed>  $query
+     * @return array<string, mixed>
+     */
+    public function getEmbeddingReconcile(array $query = []): array
+    {
+        $params = array_filter(
+            $query,
+            static fn ($v) => $v !== null && $v !== ''
+        );
+        $endpoint = '/api/v1/wordpress/embeddings/reconcile';
+
+        try {
+            $response = Http::timeout(300)
+                ->withToken($this->apiKey)
+                ->get($this->baseUrl.$endpoint, $params);
+
+            if ($response->successful()) {
+                $data = $response->json();
+
+                return is_array($data) ? $data : [];
+            }
+
+            Log::error('Backend API Error', [
+                'endpoint' => $endpoint,
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
+
+            throw new Exception("API request failed: {$response->status()}");
+        } catch (Exception $e) {
+            Log::error('Backend API Exception', [
+                'endpoint' => $endpoint,
+                'message' => $e->getMessage(),
+            ]);
+            throw $e;
+        }
+    }
+
+    /**
      * Get single video details by ID
      * Cache: 5 minutes
      */
@@ -176,20 +218,91 @@ class BackendApiService
     }
 
     /**
-     * Search videos using AI semantic search
-     * No cache - always get fresh results
+     * Available embedding namespaces and default for POST /api/v1/search
+     *
+     * @return array{namespaces: list<string>, default: string, schemes?: array<string, mixed>}
      */
-    public function searchVideos(string $query, int $limit = 10, ?string $namespace = null): array
+    public function getSearchNamespaces(): array
     {
-        $params = [
-            'query' => $query
-        ];
-        
-        if ($namespace) {
-            $params['namespace'] = $namespace;
+        return $this->makeRequest('get', '/api/v1/namespaces', [], 0);
+    }
+
+    /**
+     * JSON POST helper (pipeline expects JSON bodies; Laravel Http post() sends form-urlencoded by default).
+     *
+     * @return array<string, mixed>
+     */
+    protected function postJson(string $endpoint, array $payload): array
+    {
+        try {
+            $response = Http::timeout($this->timeout)
+                ->withToken($this->apiKey)
+                ->asJson()
+                ->post($this->baseUrl.$endpoint, $payload);
+
+            if ($response->successful()) {
+                $data = $response->json();
+
+                return is_array($data) ? $data : [];
+            }
+
+            $decoded = $response->json();
+            $detail = $decoded['detail'] ?? null;
+            if (is_array($detail)) {
+                $detail = json_encode($detail);
+            }
+            if (! is_string($detail) || $detail === '') {
+                $detail = $response->body();
+            }
+
+            Log::error('Backend API Error (POST JSON)', [
+                'endpoint' => $endpoint,
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
+
+            throw new Exception('API request failed: '.$response->status().' — '.$detail);
+        } catch (Exception $e) {
+            Log::error('Backend API Exception (POST JSON)', [
+                'endpoint' => $endpoint,
+                'message' => $e->getMessage(),
+            ]);
+            throw $e;
         }
-        
-        return $this->makeRequest('post', '/api/v1/search', $params);
+    }
+
+    /**
+     * Search videos using AI semantic search (POST /api/v1/search — same contract as WordPress page-video-ai).
+     * No cache - always get fresh results
+     *
+     * @param  array{query: string, namespace?: string|null, video_length?: string|null, post_type?: string|null}  $payload
+     * @return array<string, mixed>
+     */
+    public function semanticSearchVideos(array $payload): array
+    {
+        return $this->postJson('/api/v1/search', array_filter($payload, fn ($v) => $v !== null && $v !== ''));
+    }
+
+    /**
+     * Search videos using AI semantic search
+     *
+     * @deprecated Use semanticSearchVideos() for clarity; retained for callers that pass positional args.
+     */
+    public function searchVideos(string $query, ?string $namespace = null, ?string $videoLength = null, ?string $postType = null): array
+    {
+        $payload = ['query' => $query];
+
+        if ($namespace !== null && $namespace !== '') {
+            $payload['namespace'] = $namespace;
+        }
+        if ($videoLength !== null && $videoLength !== '') {
+            $payload['video_length'] = $videoLength;
+        }
+        if ($postType !== null && $postType !== '') {
+            $payload['post_type'] = $postType;
+        }
+
+        return $this->semanticSearchVideos($payload);
     }
 
     /**
