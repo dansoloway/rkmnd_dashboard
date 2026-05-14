@@ -188,6 +188,7 @@
                             <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Query</th>
                             <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
                             <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Count</th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stop reason</th>
                             <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Response</th>
                             <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Top 6 Results (Confidence)</th>
                         </tr>
@@ -207,6 +208,18 @@
                                     @endif
                                 </td>
                                 <td class="px-4 py-3 text-sm text-gray-500">{{ $item['result_count'] ?? '-' }}</td>
+                                <td class="px-4 py-3 text-sm text-gray-600">
+                                    @php $sr = $item['search_stop_reason'] ?? null; @endphp
+                                    @if($sr === 'llm_gate')
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-900">LLM gate</span>
+                                    @elseif($sr === 'below_score_threshold')
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-violet-100 text-violet-900">Score cutoff</span>
+                                    @elseif(($item['result_count'] ?? null) === 0 || ($item['result_count'] ?? null) === '0')
+                                        <span class="text-gray-400" title="Recorded before stop-reason logging, or empty result set">Unknown</span>
+                                    @else
+                                        <span class="text-gray-400">—</span>
+                                    @endif
+                                </td>
                                 <td class="px-4 py-3 text-sm text-gray-500">
                                     @if(!empty($item['response_time_ms']))
                                         {{ number_format($item['response_time_ms']) }} ms
