@@ -89,7 +89,7 @@ class BackendApiFake
             }
 
             if (str_contains($path, '/api/v1/tenant/search-feedback')) {
-                return Http::response(['feedback' => [], 'count' => 0]);
+                return Http::response(self::searchFeedbackPayload());
             }
 
             if (str_contains($path, '/api/v1/tenant/queries')) {
@@ -286,6 +286,40 @@ class BackendApiFake
     /**
      * @return array<string, mixed>
      */
+    public static function searchFeedbackPayload(): array
+    {
+        return [
+            'feedback' => [
+                [
+                    'id' => 1,
+                    'search_id' => 'test-search-session-001',
+                    'query' => 'hip mobility for runners',
+                    'namespace' => 'v6_title_tags',
+                    'wp_post_id' => 5001,
+                    'rank' => 1,
+                    'pinecone_score' => 0.9123,
+                    'vote' => 1,
+                    'source' => 'dashboard',
+                    'updated_at' => now()->subHours(2)->toIso8601String(),
+                ],
+                [
+                    'id' => 2,
+                    'search_id' => 'test-search-session-002',
+                    'query' => 'shoulder pain relief',
+                    'namespace' => 'v6_title_tags',
+                    'wp_post_id' => null,
+                    'rank' => null,
+                    'pinecone_score' => null,
+                    'vote' => -1,
+                    'source' => 'dashboard',
+                    'updated_at' => now()->subDay()->toIso8601String(),
+                ],
+            ],
+            'count' => 2,
+            'days' => 30,
+        ];
+    }
+
     public static function searchPayload(): array
     {
         return [

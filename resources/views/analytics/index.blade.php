@@ -253,6 +253,134 @@
         @else
             <p class="text-sm text-gray-500">No search queries recorded in the last 7 days.</p>
         @endif
+
+    @php
+        $searchFeedback = $searchFeedback ?? [];
+        $feedbackSummary = $feedbackSummary ?? ['up' => 0, 'down' => 0, 'total' => 0];
+        $feedbackDays = $feedbackDays ?? 30;
+    @endphp
+    <div class="bg-white rounded-lg shadow-sm p-6" id="search-feedback">
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+            <div>
+                <h3 class="text-lg font-heading font-medium text-gray-900">Search feedback</h3>
+                <p class="text-sm text-gray-500 mt-1">
+                    Thumbs up/down from Semantic search (dashboard). Use this to spot weak queries and bad matches.
+                </p>
+            </div>
+            <form method="GET" action="{{ route('analytics.index') }}" class="flex items-center gap-2">
+                <label for="feedback_days" class="text-sm text-gray-600">Period</label>
+                <select
+                    id="feedback_days"
+                    name="feedback_days"
+                    onchange="this.form.submit()"
+                    class="text-sm border border-gray-300 rounded-md px-2 py-1.5 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                >
+                    @foreach([7 => '7 days', 30 => '30 days', 90 => '90 days'] as $val => $label)
+                        <option value="{{ $val }}" @selected($feedbackDays === $val)>{{ $label }}</option>
+                    @endforeach
+                </select>
+            </form>
+        </div>
+
+        @if(!empty($searchFeedbackError))
+            <div class="bg-amber-50 border border-amber-200 text-amber-900 px-3 py-2 rounded text-sm mb-4">
+                Could not load feedback: {{ $searchFeedbackError }}
+            </div>
+        @endif
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+            <div class="rounded-lg border border-gray-100 bg-gray-50 px-4 py-3">
+                <p class="text-xs font-medium text-gray-500 uppercase tracking-wide">Total ratings</p>
+                <p class="mt-1 text-2xl font-heading font-bold text-gray-900">{{ number_format($feedbackSummary['total']) }}</p>
+            </div>
+            <div class="rounded-lg border border-green-100 bg-green-50 px-4 py-3">
+                <p class="text-xs font-medium text-green-800 uppercase tracking-wide">Thumbs up</p>
+                <p class="mt-1 text-2xl font-heading font-bold text-green-900">{{ number_format($feedbackSummary['up']) }}</p>
+            </div>
+            <div class="rounded-lg border border-red-100 bg-red-50 px-4 py-3">
+                <p class="text-xs font-medium text-red-800 uppercase tracking-wide">Thumbs down</p>
+                <p class="mt-1 text-2xl font-heading font-bold text-red-900">{{ number_format($feedbackSummary['down']) }}</p>
+            </div>
+        </div>
+
+        @if(count($searchFeedback) > 0)
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">When</th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Vote</th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Query</th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Namespace</th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Target</th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Rank</th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Score</th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Source</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        @foreach($searchFeedback as $fb)
+                            @php
+                                $vote = (int) ($fb['vote'] ?? 0);
+                                $isUp = $vote === 1;
+                            @endphp
+                            <tr>
+                                <td class="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">
+                                    @if(!empty($fb['updated_at']))
+                                        {{ \Carbon\Carbon::parse($fb['updated_at'])->diffForHumans() }}
+                                        <span class="block text-xs text-gray-400">{{ \Carbon\Carbon::parse($fb['updated_at'])->format('M j, g:i A') }}</span>
+                                    @else
+                                        —
+                                    @endif
+                                </td>
+                                <td class="px-4 py-3 text-sm">
+                                    @if($isUp)
+                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800" title="Relevant">👍 Up</span>
+                                    @elseif($vote === -1)
+                                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800" title="Not relevant">👎 Down</span>
+                                    @else
+                                        <span class="text-gray-400">—</span>
+                                    @endif
+                                </td>
+                                <td class="px-4 py-3 text-sm text-gray-900 max-w-xs">
+                                    <span class="font-medium">{{ e($fb['query'] ?? '—') }}</span>
+                                    @if(!empty($fb['search_id']))
+                                        <span class="block text-xs text-gray-400 font-mono mt-0.5" title="{{ $fb['search_id'] }}">{{ Str::limit($fb['search_id'], 14, '…') }}</span>
+                                    @endif
+                                </td>
+                                <td class="px-4 py-3 text-sm text-gray-600 font-mono text-xs">{{ $fb['namespace'] ?? '—' }}</td>
+                                <td class="px-4 py-3 text-sm text-gray-600">
+                                    @if(!empty($fb['wp_post_id']))
+                                        WP #{{ $fb['wp_post_id'] }}
+                                    @else
+                                        <span class="text-gray-500">Whole search</span>
+                                    @endif
+                                </td>
+                                <td class="px-4 py-3 text-sm text-gray-500">{{ $fb['rank'] ?? '—' }}</td>
+                                <td class="px-4 py-3 text-sm text-gray-600 font-mono text-xs">
+                                    @if(isset($fb['pinecone_score']) && is_numeric($fb['pinecone_score']))
+                                        {{ number_format((float) $fb['pinecone_score'], 4, '.', '') }}
+                                    @else
+                                        —
+                                    @endif
+                                </td>
+                                <td class="px-4 py-3 text-sm text-gray-500">{{ $fb['source'] ?? '—' }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+            <p class="mt-3 text-sm text-gray-500">
+                Showing {{ count($searchFeedback) }} rating(s) from the last {{ $feedbackDays }} days.
+                <a href="{{ route('ai-search.index') }}" class="text-blue-600 hover:underline">Run semantic search</a> to add more.
+            </p>
+        @else
+            <p class="text-sm text-gray-500">
+                No feedback in the last {{ $feedbackDays }} days.
+                <a href="{{ route('ai-search.index') }}" class="text-blue-600 hover:underline">Rate search results</a> on the Semantic search page.
+            </p>
+        @endif
+    </div>
     </div>
 </div>
 @endsection

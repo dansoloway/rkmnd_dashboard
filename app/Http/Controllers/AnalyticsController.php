@@ -27,7 +27,7 @@ class AnalyticsController extends Controller
     /**
      * Display analytics dashboard
      */
-    public function index()
+    public function index(Request $request)
     {
         try {
             $api = $this->getApiService();
@@ -67,7 +67,32 @@ class AnalyticsController extends Controller
                 ]);
             }
 
-            return view('analytics.index', compact('tenantInfo', 'quota', 'analytics', 'stats', 'recentQueries'));
+            $feedbackDays = $this->resolveFeedbackDays($request);
+            $searchFeedback = [];
+            $searchFeedbackError = null;
+            try {
+                $feedbackResponse = $api->getSearchFeedback(200, $feedbackDays);
+                $searchFeedback = is_array($feedbackResponse['feedback'] ?? null)
+                    ? $feedbackResponse['feedback']
+                    : [];
+            } catch (\Exception $e) {
+                Log::warning('Search feedback endpoint failed', ['error' => $e->getMessage()]);
+                $searchFeedbackError = $e->getMessage();
+            }
+
+            $feedbackSummary = $this->summarizeFeedback($searchFeedback);
+
+            return view('analytics.index', compact(
+                'tenantInfo',
+                'quota',
+                'analytics',
+                'stats',
+                'recentQueries',
+                'searchFeedback',
+                'searchFeedbackError',
+                'feedbackDays',
+                'feedbackSummary',
+            ));
 
         } catch (\Exception $e) {
             Log::error('Failed to load analytics', [
@@ -80,8 +105,39 @@ class AnalyticsController extends Controller
                 'analytics' => null,
                 'stats' => null,
                 'recentQueries' => [],
-                'error' => 'Unable to load analytics data.'
+                'searchFeedback' => [],
+                'searchFeedbackError' => null,
+                'feedbackDays' => 30,
+                'feedbackSummary' => ['up' => 0, 'down' => 0, 'total' => 0],
+                'error' => 'Unable to load analytics data.',
             ]);
         }
+    }
+
+    private function resolveFeedbackDays(Request $request): int
+    {
+        $days = (int) $request->query('feedback_days', 30);
+
+        return in_array($days, [7, 30, 90], true) ? $days : 30;
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $rows
+     * @return array{up: int, down: int, total: int}
+     */
+    private function summarizeFeedback(array $rows): array
+    {
+        $up = 0;
+        $down = 0;
+        foreach ($rows as $row) {
+            $vote = (int) ($row['vote'] ?? 0);
+            if ($vote === 1) {
+                $up++;
+            } elseif ($vote === -1) {
+                $down++;
+            }
+        }
+
+        return ['up' => $up, 'down' => $down, 'total' => $up + $down];
     }
 }
