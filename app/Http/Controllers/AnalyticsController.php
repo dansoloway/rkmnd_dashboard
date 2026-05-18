@@ -5,101 +5,99 @@ namespace App\Http\Controllers;
 use App\Services\BackendApiService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\View\View;
 
 class AnalyticsController extends Controller
 {
-    protected BackendApiService $api;
+    /** @var list<string> */
+    private const FALLBACK_NAMESPACES = [
+        'v6_title_only',
+        'v6_title_tags',
+        'v6_title_tags_short',
+        'v6_title_tags_long',
+        'v6_title_tags_short_long',
+        'v6_title_tags_catalog',
+    ];
 
-    public function __construct()
-    {
-        // API service will be initialized in each method
-    }
-
-    /**
-     * Get API service instance with tenant's API key
-     */
     protected function getApiService(): BackendApiService
     {
         $apiKey = session('tenant_api_key') ?? config('backend.default_api_key');
+
         return new BackendApiService($apiKey);
     }
 
+    public function index(Request $request): View
+    {
+        return $this->renderAnalytics($request);
+    }
+
+    public function search(Request $request): View
+    {
+        $validated = $request->validate([
+            'query' => [
+                'required',
+                'string',
+                'max:8192',
+                function (string $attribute, mixed $value, \Closure $fail): void {
+                    if (! is_string($value) || trim($value) === '') {
+                        $fail(__('The query cannot be empty.'));
+                    }
+                },
+            ],
+            'namespace' => 'nullable|string|max:128',
+            'feedback_days' => 'nullable|integer|in:7,30,90',
+        ]);
+
+        $api = $this->getApiService();
+        [, $defaultNamespace] = $this->resolveNamespacesMeta($api);
+
+        $extra = [
+            'rateSearchQuery' => trim($validated['query']),
+            'rateSearchNamespace' => trim((string) ($validated['namespace'] ?? '')) ?: $defaultNamespace,
+            'rateSearchVideos' => [],
+            'rateSearchId' => null,
+            'rateSearchResponse' => null,
+            'rateSearchError' => null,
+        ];
+
+        try {
+            $payload = ['query' => $extra['rateSearchQuery']];
+            if ($extra['rateSearchNamespace'] !== '') {
+                $payload['namespace'] = $extra['rateSearchNamespace'];
+            }
+            $searchResponse = $api->semanticSearchVideos($payload);
+            $extra['rateSearchResponse'] = $searchResponse;
+            $extra['rateSearchVideos'] = is_array($searchResponse['videos'] ?? null)
+                ? $searchResponse['videos']
+                : [];
+            $extra['rateSearchId'] = is_string($searchResponse['search_id'] ?? null)
+                ? $searchResponse['search_id']
+                : null;
+        } catch (\Exception $e) {
+            Log::warning('Analytics inline search failed', ['message' => $e->getMessage()]);
+            $extra['rateSearchError'] = $e->getMessage();
+        }
+
+        if (isset($validated['feedback_days'])) {
+            $request->merge(['feedback_days' => $validated['feedback_days']]);
+        }
+
+        return $this->renderAnalytics($request, $extra);
+    }
+
     /**
-     * Display analytics dashboard
+     * @param  array<string, mixed>  $extra
      */
-    public function index(Request $request)
+    private function renderAnalytics(Request $request, array $extra = []): View
     {
         try {
-            $api = $this->getApiService();
+            $data = $this->analyticsViewData($request);
 
-            // Get tenant info
-            $tenantInfo = $api->getTenantInfo();
-
-            // Get quota information
-            $quota = $api->getTenantQuota();
-
-            // Get analytics (if available)
-            $analytics = null;
-            try {
-                $analytics = $api->getTenantAnalytics();
-            } catch (\Exception $e) {
-                // Analytics endpoint might not be available
-                Log::info('Analytics endpoint not available');
-            }
-
-            // Get WordPress stats
-            $stats = null;
-            try {
-                $stats = $api->getWordPressStats();
-            } catch (\Exception $e) {
-                Log::info('Stats endpoint not available');
-            }
-
-            // Get recent search queries
-            $recentQueries = [];
-            try {
-                $queriesResponse = $api->getRecentQueries(50, 7);
-                $recentQueries = $queriesResponse['queries'] ?? [];
-            } catch (\Exception $e) {
-                Log::warning('Queries endpoint failed', [
-                    'error' => $e->getMessage(),
-                    'trace' => $e->getTraceAsString()
-                ]);
-            }
-
-            $feedbackDays = $this->resolveFeedbackDays($request);
-            $searchFeedback = [];
-            $searchFeedbackError = null;
-            try {
-                $feedbackResponse = $api->getSearchFeedback(200, $feedbackDays);
-                $searchFeedback = is_array($feedbackResponse['feedback'] ?? null)
-                    ? $feedbackResponse['feedback']
-                    : [];
-            } catch (\Exception $e) {
-                Log::warning('Search feedback endpoint failed', ['error' => $e->getMessage()]);
-                $searchFeedbackError = $e->getMessage();
-            }
-
-            $feedbackSummary = $this->summarizeFeedback($searchFeedback);
-
-            return view('analytics.index', compact(
-                'tenantInfo',
-                'quota',
-                'analytics',
-                'stats',
-                'recentQueries',
-                'searchFeedback',
-                'searchFeedbackError',
-                'feedbackDays',
-                'feedbackSummary',
-            ));
-
+            return view('analytics.index', array_merge($data, $this->rateSearchDefaults(), $extra));
         } catch (\Exception $e) {
-            Log::error('Failed to load analytics', [
-                'error' => $e->getMessage()
-            ]);
+            Log::error('Failed to load analytics', ['error' => $e->getMessage()]);
 
-            return view('analytics.index', [
+            return view('analytics.index', array_merge([
                 'tenantInfo' => null,
                 'quota' => null,
                 'analytics' => null,
@@ -109,14 +107,96 @@ class AnalyticsController extends Controller
                 'searchFeedbackError' => null,
                 'feedbackDays' => 30,
                 'feedbackSummary' => ['up' => 0, 'down' => 0, 'total' => 0],
+                'namespaces' => self::FALLBACK_NAMESPACES,
+                'defaultNamespace' => 'v6_title_tags',
+                'namespaceLoadNote' => null,
                 'error' => 'Unable to load analytics data.',
-            ]);
+            ], $this->rateSearchDefaults(), $extra));
         }
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function analyticsViewData(Request $request): array
+    {
+        $api = $this->getApiService();
+
+        $tenantInfo = $api->getTenantInfo();
+        $quota = $api->getTenantQuota();
+
+        $analytics = null;
+        try {
+            $analytics = $api->getTenantAnalytics();
+        } catch (\Exception $e) {
+            Log::info('Analytics endpoint not available');
+        }
+
+        $stats = null;
+        try {
+            $stats = $api->getWordPressStats();
+        } catch (\Exception $e) {
+            Log::info('Stats endpoint not available');
+        }
+
+        $recentQueries = [];
+        try {
+            $queriesResponse = $api->getRecentQueries(50, 7);
+            $recentQueries = $queriesResponse['queries'] ?? [];
+        } catch (\Exception $e) {
+            Log::warning('Queries endpoint failed', ['error' => $e->getMessage()]);
+        }
+
+        [$namespaces, $defaultNamespace, $namespaceLoadNote] = $this->resolveNamespacesMeta($api);
+
+        $feedbackDays = $this->resolveFeedbackDays($request);
+        $searchFeedback = [];
+        $searchFeedbackError = null;
+        try {
+            $feedbackResponse = $api->getSearchFeedback(200, $feedbackDays);
+            $searchFeedback = is_array($feedbackResponse['feedback'] ?? null)
+                ? $feedbackResponse['feedback']
+                : [];
+        } catch (\Exception $e) {
+            Log::warning('Search feedback endpoint failed', ['error' => $e->getMessage()]);
+            $searchFeedbackError = $e->getMessage();
+        }
+
+        return [
+            'tenantInfo' => $tenantInfo,
+            'quota' => $quota,
+            'analytics' => $analytics,
+            'stats' => $stats,
+            'recentQueries' => is_array($recentQueries) ? $recentQueries : [],
+            'searchFeedback' => $searchFeedback,
+            'searchFeedbackError' => $searchFeedbackError,
+            'feedbackDays' => $feedbackDays,
+            'feedbackSummary' => $this->summarizeFeedback($searchFeedback),
+            'namespaces' => $namespaces,
+            'defaultNamespace' => $defaultNamespace,
+            'namespaceLoadNote' => $namespaceLoadNote,
+            'error' => null,
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function rateSearchDefaults(): array
+    {
+        return [
+            'rateSearchQuery' => '',
+            'rateSearchNamespace' => 'v6_title_tags',
+            'rateSearchVideos' => [],
+            'rateSearchId' => null,
+            'rateSearchResponse' => null,
+            'rateSearchError' => null,
+        ];
     }
 
     private function resolveFeedbackDays(Request $request): int
     {
-        $days = (int) $request->query('feedback_days', 30);
+        $days = (int) $request->query('feedback_days', $request->input('feedback_days', 30));
 
         return in_array($days, [7, 30, 90], true) ? $days : 30;
     }
@@ -139,5 +219,29 @@ class AnalyticsController extends Controller
         }
 
         return ['up' => $up, 'down' => $down, 'total' => $up + $down];
+    }
+
+    /**
+     * @return array{0: list<string>, 1: string, 2: ?string}
+     */
+    private function resolveNamespacesMeta(BackendApiService $api): array
+    {
+        try {
+            $meta = $api->getSearchNamespaces();
+            $list = $meta['namespaces'] ?? [];
+            if (! is_array($list)) {
+                $list = [];
+            }
+            $list = array_values(array_unique(array_filter($list, fn ($n) => is_string($n) && $n !== '')));
+            $default = is_string($meta['default'] ?? null) ? (string) $meta['default'] : 'v6_title_tags';
+
+            if ($list === []) {
+                return [self::FALLBACK_NAMESPACES, $default, 'Namespace list empty from API — using fallback.'];
+            }
+
+            return [$list, $default, null];
+        } catch (\Exception $e) {
+            return [self::FALLBACK_NAMESPACES, 'v6_title_tags', 'Could not load namespaces from API ('.$e->getMessage().') — using fallback.'];
+        }
     }
 }

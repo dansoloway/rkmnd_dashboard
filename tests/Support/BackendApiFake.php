@@ -93,7 +93,7 @@ class BackendApiFake
             }
 
             if (str_contains($path, '/api/v1/tenant/queries')) {
-                return Http::response(['queries' => []]);
+                return Http::response(self::recentQueriesPayload());
             }
 
             return Http::response(['status' => 'ok'], 200);
@@ -286,6 +286,30 @@ class BackendApiFake
     /**
      * @return array<string, mixed>
      */
+    public static function recentQueriesPayload(): array
+    {
+        return [
+            'queries' => [
+                [
+                    'query' => 'shoulder pain',
+                    'search_id' => 'test-search-session-001',
+                    'timestamp' => now()->subHour()->toIso8601String(),
+                    'result_count' => 1,
+                    'namespace' => 'v6_title_tags',
+                    'results' => [
+                        [
+                            'title' => 'Hip Mobility Flow',
+                            'wp_post_id' => 5001,
+                            'score' => 0.91,
+                        ],
+                    ],
+                ],
+            ],
+            'count' => 1,
+            'days' => 7,
+        ];
+    }
+
     public static function searchFeedbackPayload(): array
     {
         return [

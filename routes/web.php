@@ -45,6 +45,7 @@ Route::middleware(['auth'])->group(function () {
 
     // Analytics
     Route::get('/analytics', [App\Http\Controllers\AnalyticsController::class, 'index'])->name('analytics.index');
+    Route::post('/analytics/search', [App\Http\Controllers\AnalyticsController::class, 'search'])->name('analytics.search');
     
     // Sync Logs
     Route::get('/sync-logs', [App\Http\Controllers\SyncLogController::class, 'index'])->name('sync-logs.index');

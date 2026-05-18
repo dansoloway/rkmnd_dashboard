@@ -120,6 +120,7 @@ class AiSearchController extends Controller
             'wp_post_id' => 'nullable|integer|min:1',
             'rank' => 'nullable|integer|min:1|max:100',
             'pinecone_score' => 'nullable|numeric',
+            'source' => 'nullable|string|in:dashboard,analytics,api,wordpress',
         ]);
 
         try {
@@ -127,7 +128,7 @@ class AiSearchController extends Controller
             $payload = [
                 'search_id' => $validated['search_id'],
                 'vote' => (int) $validated['vote'],
-                'source' => 'dashboard',
+                'source' => $validated['source'] ?? 'dashboard',
             ];
             if (isset($validated['wp_post_id'])) {
                 $payload['wp_post_id'] = (int) $validated['wp_post_id'];
