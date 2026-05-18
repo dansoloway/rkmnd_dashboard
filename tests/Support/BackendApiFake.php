@@ -193,7 +193,18 @@ class BackendApiFake
                     'pinecone_id' => 'jwp-abc',
                 ],
             ],
-            'audio_previews' => [],
+            'audio_previews' => [
+                [
+                    'id' => 5,
+                    's3_key' => 'tenant_1/videos/1/audio_preview.mp3',
+                    's3_url' => 'https://example.com/audio1.mp3',
+                    'duration_seconds' => 42,
+                    'file_size_bytes' => 128000,
+                    'voice_id' => 'voice-test',
+                    'generation_status' => 'completed',
+                    'source_text' => 'Title: Test Video One. A short preview script.',
+                ],
+            ],
         ];
     }
 
