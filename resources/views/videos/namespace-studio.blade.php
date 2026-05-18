@@ -48,7 +48,7 @@
             <select name="view" id="view"
                     class="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
                 <option value="all" @selected($viewMode === 'all')>Videos in this namespace</option>
-                <option value="issues" @selected($viewMode === 'issues')>Issues only (after reconcile)</option>
+                <option value="issues" @selected($viewMode === 'issues')>Reconcile gaps only</option>
             </select>
         </div>
         <div class="flex-1 min-w-[200px]">
@@ -121,6 +121,32 @@
             </div>
         </dl>
 
+        @if($reconcileSummary)
+            <div class="mb-4 flex flex-wrap gap-2 text-sm">
+                <span class="text-gray-600 mr-1">View gap rows:</span>
+                <button type="button"
+                        x-on:click="issuesBucketFilter = 'all'; document.getElementById('reconcile-gaps')?.scrollIntoView({ behavior: 'smooth' })"
+                        class="text-blue-600 hover:text-blue-800 underline">
+                    All (<span x-text="gapBucketCounts().all"></span>)
+                </button>
+                <button type="button"
+                        x-on:click="issuesBucketFilter = 'missing_from_pinecone'; document.getElementById('reconcile-gaps')?.scrollIntoView({ behavior: 'smooth' })"
+                        class="text-amber-800 hover:text-amber-900 underline">
+                    Missing (<span x-text="gapBucketCounts().missing"></span>)
+                </button>
+                <button type="button"
+                        x-on:click="issuesBucketFilter = 'pinecone_not_in_db'; document.getElementById('reconcile-gaps')?.scrollIntoView({ behavior: 'smooth' })"
+                        class="text-red-800 hover:text-red-900 underline">
+                    Orphans (<span x-text="gapBucketCounts().orphans"></span>)
+                </button>
+                <button type="button"
+                        x-on:click="issuesBucketFilter = 'unexpected_in_index'; document.getElementById('reconcile-gaps')?.scrollIntoView({ behavior: 'smooth' })"
+                        class="text-purple-800 hover:text-purple-900 underline">
+                    Unexpected (<span x-text="gapBucketCounts().unexpected"></span>)
+                </button>
+            </div>
+        @endif
+
         <div class="border-t border-gray-100 pt-4">
             <h3 class="text-sm font-medium text-gray-900 mb-2">Location badges (per video)</h3>
             <ul class="text-xs text-gray-700 space-y-1 list-disc list-inside">
@@ -142,6 +168,10 @@
             <span x-show="reconcileOk" class="text-sm text-green-700">Reconcile finished.</span>
         </div>
     </div>
+    @endif
+
+    @if($hasNamespace)
+        @include('videos.partials.namespace-studio-gaps')
     @endif
 
     <div x-show="modalOpen"
@@ -267,58 +297,14 @@
     @else
         @if(!$hasNamespace)
             <div class="bg-white shadow rounded-lg p-8 text-center text-sm text-gray-600">
-                Select a namespace above to view reconcile issues for that embedding scheme.
+                Select a namespace above to view reconcile gaps for that embedding scheme.
             </div>
         @else
-        <div class="bg-white shadow rounded-lg p-6">
-            <p class="text-sm text-gray-600 mb-4">
-                Issue rows come from the <strong>last saved reconcile</strong> for this namespace, or the run you just started.
-                <a href="{{ route('videos.embeddings-reconcile') }}" class="text-blue-600 hover:underline">Embeddings reconcile</a> uses the same API.
+            <p class="text-sm text-gray-600 bg-blue-50 border border-blue-100 rounded-lg px-4 py-3 mb-2">
+                Reconcile gaps only (catalog table hidden).
+                <a href="{{ route('videos.namespace-studio', ['namespace' => $selectedNamespace, 'view' => 'all', 'search' => $search]) }}"
+                   class="text-blue-600 hover:underline">Show videos in this namespace</a>
             </p>
-            <div x-show="!issuesRows.length && !reconcileLoading" class="text-sm text-gray-500 py-8 text-center">
-                No issue rows. Run <strong>Reconcile</strong> above (or load a namespace with a saved snapshot).
-            </div>
-            <div x-show="reconcileLoading" class="text-sm text-gray-500 py-8 text-center">Reconciling…</div>
-
-            <div x-show="issuesRows.length > 0" class="hidden md:block overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                    <tr>
-                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Issue</th>
-                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">jwp_id</th>
-                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Title / WP</th>
-                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Open</th>
-                    </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-200">
-                    <template x-for="row in issuesRows" :key="row.key">
-                        <tr class="hover:bg-gray-50">
-                            <td class="px-3 py-2 text-sm" x-text="row.issueLabel"></td>
-                            <td class="px-3 py-2 text-xs font-mono" x-text="row.jwp_id || '—'"></td>
-                            <td class="px-3 py-2 text-sm">
-                                <span x-text="row.title || '—'"></span>
-                                <span class="block text-xs text-gray-500" x-show="row.wp_post_id" x-text="'WP #' + row.wp_post_id"></span>
-                            </td>
-                            <td class="px-3 py-2 text-sm">
-                                <a :href="row.openUrl" class="text-blue-600 hover:text-blue-800" x-text="row.openLabel"></a>
-                            </td>
-                        </tr>
-                    </template>
-                    </tbody>
-                </table>
-            </div>
-
-            <div class="md:hidden space-y-3" x-show="issuesRows.length > 0">
-                <template x-for="row in issuesRows" :key="row.key + '-m'">
-                    <div class="border border-gray-100 rounded-lg p-4 text-sm">
-                        <div class="font-medium text-gray-900" x-text="row.issueLabel"></div>
-                        <div class="font-mono text-xs text-gray-600 mt-1" x-text="row.jwp_id || '—'"></div>
-                        <div class="mt-1" x-text="row.title || '—'"></div>
-                        <a :href="row.openUrl" class="inline-block mt-2 text-blue-600" x-text="row.openLabel"></a>
-                    </div>
-                </template>
-            </div>
-        </div>
         @endif
     @endif
 </div>
@@ -351,6 +337,7 @@ function namespaceStudio(cfg) {
         reconcilePayload: null,
         reconcileSummary: null,
         issuesRows: [],
+        issuesBucketFilter: 'all',
         modalOpen: false,
         modalLoading: false,
         modalText: '',
@@ -359,6 +346,42 @@ function namespaceStudio(cfg) {
 
         init() {
             this.hydrateFromSavedSnapshot();
+            if (this.viewMode === 'issues') {
+                this.$nextTick(() => {
+                    const el = document.getElementById('reconcile-gaps');
+                    if (el) {
+                        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                });
+            }
+        },
+
+        filteredIssuesRows() {
+            if (this.issuesBucketFilter === 'all') {
+                return this.issuesRows;
+            }
+            return this.issuesRows.filter((r) => r.bucket === this.issuesBucketFilter);
+        },
+
+        gapBucketCounts() {
+            const s = this.reconcileSummary || {};
+            const missing = Number(s.missing_from_pinecone_count || 0);
+            const orphans = Number(s.pinecone_not_in_db_count || 0);
+            const unexpected = Number(s.pinecone_in_db_but_not_expected_count || 0);
+            return {
+                all: missing + orphans + unexpected,
+                missing,
+                orphans,
+                unexpected,
+            };
+        },
+
+        gapListTruncated() {
+            const s = this.reconcileSummary;
+            if (!s) {
+                return false;
+            }
+            return !!(s.missing_from_pinecone_truncated || s.pinecone_not_in_db_truncated || s.pinecone_unexpected_truncated);
         },
 
         hydrateFromSavedSnapshot() {
@@ -427,8 +450,10 @@ function namespaceStudio(cfg) {
             const videoBase = @json(url('/videos'));
             const rows = [];
             let k = 0;
-            const add = (issueLabel, jwp_id, wp_post_id, title, pipelineId) => {
+            const add = (bucket, issueLabel, r, pipelineId) => {
                 k++;
+                const jwp_id = r.jwp_id || '';
+                const title = r.title || '';
                 let openUrl = dbUrl + '?search=' + encodeURIComponent(title || jwp_id || '');
                 let openLabel = 'Search in Metadata';
                 if (pipelineId) {
@@ -436,24 +461,29 @@ function namespaceStudio(cfg) {
                     openLabel = 'Open video';
                 }
                 rows.push({
-                    key: issueLabel + '-' + k + '-' + (jwp_id || ''),
+                    key: bucket + '-' + k + '-' + jwp_id,
+                    bucket,
                     issueLabel,
-                    jwp_id: jwp_id || '',
-                    wp_post_id: wp_post_id || null,
-                    title: title || '',
+                    jwp_id,
+                    wp_post_id: r.wp_post_id || null,
+                    title,
+                    category_for_ai: r.category_for_ai || '',
+                    post_status: r.post_status || '',
+                    post_type: r.post_type || '',
+                    reason: r.reason || '',
                     openUrl,
                     openLabel,
                 });
             };
 
             (payload.missing_from_pinecone || []).forEach(r => {
-                add('Missing from Pinecone', r.jwp_id, r.wp_post_id, r.title, null);
+                add('missing_from_pinecone', 'Missing from Pinecone', r, null);
             });
             (payload.pinecone_not_in_db || []).forEach(r => {
-                add('Pinecone not in DB', r.jwp_id, null, '', null);
+                add('pinecone_not_in_db', 'Pinecone not in DB', r, null);
             });
             (payload.pinecone_unexpected || []).forEach(r => {
-                add('Unexpected in index', r.jwp_id, r.wp_post_id, r.title, null);
+                add('unexpected_in_index', 'Unexpected in index', r, null);
             });
             this.issuesRows = rows;
         },

@@ -63,7 +63,9 @@ class NamespaceStudioTest extends FeatureTestCase
 
         $this->get(route('videos.namespace-studio', ['namespace' => 'v6_title_tags']))
             ->assertOk()
-            ->assertSee('42');
+            ->assertSee('42')
+            ->assertSee('Reconcile gaps')
+            ->assertSee('Missing from Pinecone');
     }
 
     public function test_catalog_requests_videos_for_selected_namespace(): void
