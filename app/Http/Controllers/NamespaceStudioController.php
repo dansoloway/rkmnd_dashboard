@@ -65,10 +65,11 @@ class NamespaceStudioController extends Controller
         $api = $this->getApiService();
         [$namespaces, $defaultNs, $namespaceNote] = $this->resolveNamespaces($api);
 
-        $namespace = trim((string) $request->input('namespace', $defaultNs));
-        if ($namespace === '' || ! in_array($namespace, $namespaces, true)) {
-            $namespace = $defaultNs;
+        $namespace = trim((string) $request->input('namespace', ''));
+        if ($namespace !== '' && ! in_array($namespace, $namespaces, true)) {
+            $namespace = '';
         }
+        $hasNamespace = $namespace !== '';
 
         $viewMode = $request->input('view', 'all') === 'issues' ? 'issues' : 'all';
         $search = trim((string) $request->input('search', ''));
@@ -96,7 +97,7 @@ class NamespaceStudioController extends Controller
         $listError = null;
         $totalPages = 1;
 
-        if ($viewMode === 'all') {
+        if ($viewMode === 'all' && $hasNamespace) {
             try {
                 $filters = [
                     'limit' => self::PAGE_SIZE,
@@ -104,6 +105,7 @@ class NamespaceStudioController extends Controller
                     'fields' => $fields,
                     'sort_by' => 'title',
                     'sort_order' => 'asc',
+                    'embedding_namespace' => $namespace,
                 ];
                 if ($search !== '') {
                     $filters['search'] = $search;
@@ -129,15 +131,14 @@ class NamespaceStudioController extends Controller
             $rows[] = $this->normalizeCatalogRow($v, $namespace);
         }
 
-        $nsMeta = self::NAMESPACE_META[$namespace] ?? [
-            'label' => $namespace,
-            'keys' => [],
-        ];
+        $nsMeta = $hasNamespace
+            ? (self::NAMESPACE_META[$namespace] ?? ['label' => $namespace, 'keys' => []])
+            : ['label' => '', 'keys' => []];
 
         $snapshotForJs = null;
         $reconcileSnapshotDisplay = null;
         $tenantId = Auth::user()?->tenant_id;
-        if ($tenantId) {
+        if ($tenantId && $hasNamespace) {
             $row = EmbeddingReconcileSnapshot::query()
                 ->where('tenant_id', $tenantId)
                 ->where('namespace', $namespace)
@@ -157,8 +158,12 @@ class NamespaceStudioController extends Controller
         return view('videos.namespace-studio', [
             'namespaces' => $namespaces,
             'selectedNamespace' => $namespace,
+            'hasNamespace' => $hasNamespace,
+            'defaultNamespace' => $defaultNs,
             'namespaceNote' => $namespaceNote,
-            'namespaceDefinition' => $this->formatNamespaceDefinition($namespace, $nsMeta),
+            'namespaceDefinition' => $hasNamespace
+                ? $this->formatNamespaceDefinition($namespace, $nsMeta)
+                : 'Select a namespace above to see its definition, reconcile snapshot, and catalog rows for that embedding scheme.',
             'namespaceKeys' => $nsMeta['keys'],
             'viewMode' => $viewMode,
             'search' => $search,

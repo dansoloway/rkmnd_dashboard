@@ -37,6 +37,7 @@
             <select name="namespace" id="namespace"
                     class="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                     onchange="this.form.submit()">
+                <option value="" @selected($selectedNamespace === '')>— Select namespace —</option>
                 @foreach($namespaces as $ns)
                     <option value="{{ $ns }}" @selected($selectedNamespace === $ns)>{{ $ns }}</option>
                 @endforeach
@@ -46,7 +47,7 @@
             <label for="view" class="block text-sm font-medium text-gray-700 mb-1">View</label>
             <select name="view" id="view"
                     class="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                <option value="all" @selected($viewMode === 'all')>All videos (catalog)</option>
+                <option value="all" @selected($viewMode === 'all')>Videos in this namespace</option>
                 <option value="issues" @selected($viewMode === 'issues')>Issues only (after reconcile)</option>
             </select>
         </div>
@@ -122,7 +123,7 @@
         <div class="mt-6 flex flex-wrap items-center gap-3">
             <button type="button"
                     x-on:click="runReconcile()"
-                    x-bind:disabled="reconcileLoading"
+                    x-bind:disabled="reconcileLoading || !selectedNamespace"
                     class="inline-flex items-center px-4 py-2 bg-gray-900 text-white text-sm font-medium rounded-md hover:bg-gray-800 disabled:opacity-50">
                 <span x-show="!reconcileLoading">Run reconcile</span>
                 <span x-show="reconcileLoading">Reconciling… (may take minutes)</span>
@@ -150,10 +151,15 @@
     </div>
 
     @if($viewMode === 'all')
-        @if($listError)
+        @if(!$hasNamespace)
+            <div class="bg-white shadow rounded-lg p-8 text-center text-sm text-gray-600">
+                Select a namespace above to list videos indexed for that embedding scheme.
+            </div>
+        @elseif($listError)
             <div class="mb-4 p-4 bg-red-50 text-red-800 rounded-lg text-sm">Failed to load videos: {{ $listError }}</div>
         @endif
 
+        @if($hasNamespace)
         <div class="hidden md:block bg-white shadow rounded-lg overflow-hidden">
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
@@ -246,7 +252,13 @@
                 @endfor
             </nav>
         @endif
+        @endif
     @else
+        @if(!$hasNamespace)
+            <div class="bg-white shadow rounded-lg p-8 text-center text-sm text-gray-600">
+                Select a namespace above to view reconcile issues for that embedding scheme.
+            </div>
+        @else
         <div class="bg-white shadow rounded-lg p-6">
             <p class="text-sm text-gray-600 mb-4">
                 Issue rows come from the <strong>last saved reconcile</strong> for this namespace, or the run you just started.
@@ -296,6 +308,7 @@
                 </template>
             </div>
         </div>
+        @endif
     @endif
 </div>
 
