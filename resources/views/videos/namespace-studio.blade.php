@@ -1,15 +1,19 @@
 @extends('layouts.app')
 
 @section('content')
+@php
+    $namespaceStudioBoot = [
+        'reconcileUrl' => route('videos.namespace-studio.reconcile'),
+        'embeddingTextBase' => url('/videos'),
+        'selectedNamespace' => $selectedNamespace,
+        'viewMode' => $viewMode,
+        'savedSnapshot' => $reconcileSnapshotForJs,
+        'reconciledAtDisplay' => data_get($reconcileSnapshotForJs, 'reconciled_at_display'),
+    ];
+@endphp
+<script type="application/json" id="namespace-studio-boot">@json($namespaceStudioBoot)</script>
 <div class="py-0 -mt-2"
-     x-data="namespaceStudio({
-        reconcileUrl: @json(route('videos.namespace-studio.reconcile')),
-        embeddingTextBase: @json(url('/videos')),
-        selectedNamespace: @json($selectedNamespace),
-        viewMode: @json($viewMode),
-        savedSnapshot: @json($reconcileSnapshotForJs),
-        reconciledAtDisplay: @json(data_get($reconcileSnapshotForJs, 'reconciled_at_display')),
-     })"
+     x-data="namespaceStudioFromBoot()"
      x-init="init()">
 
     <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -191,7 +195,7 @@
                         <td class="px-3 py-2 text-sm" onclick="event.stopPropagation()">
                             <button type="button"
                                     class="text-blue-600 hover:text-blue-800 text-sm"
-                                    x-on:click.stop="openEmbeddingModal({{ $r['id'] }}, @json($r['title']))">
+                                    x-on:click.stop="openEmbeddingModal({{ $r['id'] }})">
                                 View full text
                             </button>
                         </td>
@@ -224,7 +228,7 @@
                     @endif
                     <div class="mt-2" onclick="event.stopPropagation()">
                         <button type="button" class="text-blue-600 text-sm"
-                                x-on:click.stop="openEmbeddingModal({{ $r['id'] }}, @json($r['title']))">View embedding text</button>
+                                x-on:click.stop="openEmbeddingModal({{ $r['id'] }})">View embedding text</button>
                     </div>
                 </div>
             @endforeach
@@ -301,6 +305,12 @@
 
 @push('scripts')
 <script>
+function namespaceStudioFromBoot() {
+    const el = document.getElementById('namespace-studio-boot');
+    const cfg = el ? JSON.parse(el.textContent) : {};
+    return namespaceStudio(cfg);
+}
+
 function namespaceStudio(cfg) {
     const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
 
@@ -424,11 +434,11 @@ function namespaceStudio(cfg) {
             this.issuesRows = rows;
         },
 
-        async openEmbeddingModal(videoId, title) {
+        async openEmbeddingModal(videoId) {
             this.modalOpen = true;
             this.modalLoading = true;
             this.modalText = '';
-            this.modalTitle = title || ('Video #' + videoId);
+            this.modalTitle = 'Video #' + videoId;
             this.modalError = null;
             const url = this.embeddingTextBase + '/' + videoId + '/embedding-text?namespace=' + encodeURIComponent(this.selectedNamespace);
             try {
@@ -437,6 +447,9 @@ function namespaceStudio(cfg) {
                 if (!data.ok) {
                     this.modalError = data.message || 'Failed to load';
                     return;
+                }
+                if (data.title) {
+                    this.modalTitle = data.title;
                 }
                 this.modalText = data.text || '';
             } catch (e) {
