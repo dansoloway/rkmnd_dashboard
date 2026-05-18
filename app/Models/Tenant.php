@@ -69,6 +69,14 @@ class Tenant extends Model
     }
 
     /**
+     * Latest saved Pinecone/DB reconcile per namespace (namespace studio).
+     */
+    public function embeddingReconcileSnapshots(): HasMany
+    {
+        return $this->hasMany(EmbeddingReconcileSnapshot::class);
+    }
+
+    /**
      * Scope to get only active tenants
      */
     public function scopeActive($query)

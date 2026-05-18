@@ -21,6 +21,11 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/dashboard/clear-cache', [\App\Http\Controllers\DashboardController::class, 'clearCache'])->name('dashboard.clear-cache');
     
     // Videos
+    Route::get('/videos/namespace-studio', [App\Http\Controllers\NamespaceStudioController::class, 'index'])->name('videos.namespace-studio');
+    Route::post('/videos/namespace-studio/reconcile', [App\Http\Controllers\NamespaceStudioController::class, 'reconcile'])->name('videos.namespace-studio.reconcile');
+    Route::get('/videos/{id}/embedding-text', [App\Http\Controllers\NamespaceStudioController::class, 'embeddingText'])
+        ->whereNumber('id')
+        ->name('videos.embedding-text');
     Route::get('/videos', [App\Http\Controllers\VideoController::class, 'index'])->name('videos.index');
     Route::get('/videos/search-visible-audio', [App\Http\Controllers\VideoController::class, 'searchVisibleAudio'])->name('videos.search-visible-audio');
     Route::post('/videos/{id}/audio-script', [App\Http\Controllers\VideoController::class, 'updateAudioScript'])->name('videos.update-audio-script');

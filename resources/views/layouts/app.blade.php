@@ -55,8 +55,11 @@
                         <a href="{{ route('dashboard') }}" class="inline-flex items-center px-1 pt-1 border-b-2 {{ request()->routeIs('dashboard') ? 'border-blue-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700' }}">
                             Dashboard
                         </a>
-                        <a href="{{ route('videos.index') }}" class="inline-flex items-center px-1 pt-1 border-b-2 {{ request()->routeIs('videos.*') ? 'border-blue-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700' }}">
+                        <a href="{{ route('videos.index') }}" class="inline-flex items-center px-1 pt-1 border-b-2 {{ request()->routeIs('videos.index') || request()->routeIs('videos.show') || request()->routeIs('videos.database') || request()->routeIs('videos.embeddings-reconcile') || request()->routeIs('videos.search-visible-audio') || request()->routeIs('videos.embedding-text') ? 'border-blue-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700' }}">
                             Videos
+                        </a>
+                        <a href="{{ route('videos.namespace-studio') }}" class="inline-flex items-center px-1 pt-1 border-b-2 {{ request()->routeIs('videos.namespace-studio') ? 'border-blue-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700' }}">
+                            Namespaces
                         </a>
                         <a href="{{ route('videos.search-visible-audio') }}" class="inline-flex items-center px-1 pt-1 border-b-2 {{ request()->routeIs('videos.search-visible-audio') ? 'border-blue-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700' }}">
                             Search-visible Audio
@@ -108,6 +111,9 @@
                 </a>
                 <a href="{{ route('videos.search-visible-audio') }}" class="block px-3 py-2 rounded-md text-base font-medium {{ request()->routeIs('videos.search-visible-audio') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900' }}">
                     Search-visible Audio
+                </a>
+                <a href="{{ route('videos.namespace-studio') }}" class="block px-3 py-2 rounded-md text-base font-medium {{ request()->routeIs('videos.namespace-studio') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900' }}">
+                    Namespace studio
                 </a>
                 <a href="{{ route('videos.database') }}" class="block px-3 py-2 rounded-md text-base font-medium {{ request()->routeIs('videos.database') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900' }}">
                     Metadata
