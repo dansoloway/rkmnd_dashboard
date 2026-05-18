@@ -11,9 +11,14 @@
 
 This Laravel application provides a beautiful, user-friendly interface for TuneUp Fitness tenants to:
 - Browse and search their video library
+- Run **semantic search** against the same API as WordPress (`POST /api/v1/search`)
+- Rate search results with **thumbs up/down** and review feedback on **Analytics**
+- Manage **embedding namespaces** (Namespace studio: reconcile, gaps, audio script edits on video detail)
 - Listen to AI-generated audio previews
-- View usage analytics and quotas
+- View usage analytics, recent queries, and quotas
 - Manage their account settings
+
+**Production URL:** `https://rkmnd.fitform100.net` (see workspace `ARCHITECTURE.md` for server paths).
 
 The app consumes the FastAPI backend at `https://fitform100.com` and provides a clean separation between the API layer and presentation layer.
 
@@ -92,16 +97,25 @@ Visit: `http://localhost:8000`
 ## 📚 Documentation
 
 ### Essential Reading
-1. **`LARAVEL_INTEGRATION_GUIDE.md`** - Complete API integration guide
-   - Located: `/Users/daniel-new2/sites/tuneup_ai_pipeline/docs/`
-   - All API endpoints, data models, and implementation examples
+1. **Workspace `ARCHITECTURE.md`** — multi-repo map, servers, data flows
+2. **`ai_pipeline/tuneup_ai_pipeline/docs/SEARCH_FEEDBACK.md`** — search feedback API and dashboard behavior
+3. **`ai_pipeline/tuneup_ai_pipeline/docs/SEARCH_PIPELINE_CURRENT_STATE.md`** — how search scoring and gates work
+4. **`LARAVEL_INTEGRATION_GUIDE.md`** / **`API_ENDPOINTS_QUICK_REFERENCE.md`** — in pipeline `docs/`
+5. **Backend API Docs** — `https://fitform100.com/docs`
 
-2. **`API_ENDPOINTS_QUICK_REFERENCE.md`** - Quick API reference
-   - Located: `/Users/daniel-new2/sites/tuneup_ai_pipeline/docs/`
-   - cURL examples and response formats
+### Search feedback (MVP)
 
-3. **Backend API Docs** - Interactive Swagger docs
-   - URL: `https://fitform100.com/docs`
+| Page | Route | Notes |
+|------|-------|--------|
+| Semantic search | `/ai-search` | Playground; 👍/👎 per result or whole query when empty |
+| Analytics | `/analytics` | **Search feedback** table + 7/30/90-day filter |
+| API proxy | `POST /ai-search/feedback` | Forwards to pipeline `POST /api/v1/search/feedback` |
+
+**Backend service:** `App\Services\BackendApiService::semanticSearchVideos()`, `submitSearchFeedback()`, `getSearchFeedback()`.
+
+**Tests:** `tests/Feature/AiSearchTest.php`, `tests/Feature/AnalyticsTest.php`.
+
+WordPress `page-video-ai.php` does not collect feedback yet.
 
 ---
 
