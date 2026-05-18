@@ -20,8 +20,8 @@
         <div>
             <h1 class="text-2xl font-heading font-bold text-gray-900">Namespace studio</h1>
             <p class="mt-1 text-sm text-gray-600">
-                Pick an embedding scheme namespace. Overview shows catalog and Pinecone counts (after reconcile).
-                Catalog table: search, badges, thumbnail, audio preview, and embedding input text (modal).
+                Pick an embedding scheme namespace. Overview and catalog are scoped to that namespace only.
+                Run reconcile for Pinecone vs DB counts.
             </p>
         </div>
         <a href="{{ route('videos.index') }}" class="text-sm text-blue-600 hover:text-blue-800">← Video library</a>
@@ -62,52 +62,62 @@
         </button>
     </form>
 
+    @if($hasNamespace)
     <div class="bg-white shadow rounded-lg p-6 mb-8">
         <h2 class="text-lg font-semibold text-gray-900 mb-2">Namespace overview</h2>
-        <p class="text-sm text-gray-700 mb-4">{{ $namespaceDefinition }}</p>
+        <p class="text-sm text-gray-700 mb-1">{{ $namespaceDefinition }}</p>
+        <p class="text-sm text-gray-500 mb-4 font-mono">{{ $selectedNamespace }}</p>
 
         <div class="text-sm text-gray-600 mb-4">
-            <strong>Data source:</strong> WordPress → AI pipeline <code class="bg-gray-100 px-1 rounded text-xs">videos</code> table (tenant). Counts use
-            <code class="bg-gray-100 px-1 rounded text-xs">GET /api/v1/wordpress/stats</code> and optional reconcile.
+            <strong>Data source:</strong> <code class="bg-gray-100 px-1 rounded text-xs">GET /api/v1/wordpress/videos?embedding_namespace={{ $selectedNamespace }}</code>
+            and optional reconcile for Pinecone.
         </div>
 
         <p class="text-sm text-gray-800 mb-4 rounded-lg border border-gray-100 bg-gray-50 px-3 py-2">
             <strong>Last saved reconcile:</strong>
             <span x-text="reconciledAtDisplay || '— (none yet for this namespace)'"></span>
-            <span class="text-gray-500"> — Stored per tenant after each successful run. Change namespace above for other snapshots.</span>
+            <span class="text-gray-500"> — Per tenant and namespace. Change namespace above for other snapshots.</span>
         </p>
 
         <dl class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
             <div class="border border-gray-100 rounded-lg p-4">
-                <dt class="text-xs font-medium text-gray-500 uppercase">Videos in catalog (WP sync)</dt>
+                <dt class="text-xs font-medium text-gray-500 uppercase">Videos in namespace</dt>
                 <dd class="mt-1 text-2xl font-semibold text-gray-900">
-                    @if($statsError)
-                        <span class="text-red-600 text-base" title="{{ $statsError }}">Error</span>
+                    @if($namespaceCountError)
+                        <span class="text-red-600 text-base" title="{{ $namespaceCountError }}">Error</span>
+                    @elseif($namespaceCatalogCount !== null)
+                        {{ number_format($namespaceCatalogCount) }}
                     @else
-                        {{ number_format($catalogCount) }}
+                        <span class="text-gray-400 text-base">—</span>
                     @endif
                 </dd>
-                <p class="mt-1 text-xs text-gray-500">Pipeline <code class="bg-gray-100 px-0.5">stats.total_videos</code> for this tenant.</p>
+                <p class="mt-1 text-xs text-gray-500">Catalog cohort for <code class="bg-gray-100 px-0.5">{{ $selectedNamespace }}</code> (pipeline list total).</p>
             </div>
             <div class="border border-gray-100 rounded-lg p-4">
-                <dt class="text-xs font-medium text-gray-500 uppercase">All videos (tenant catalog)</dt>
+                <dt class="text-xs font-medium text-gray-500 uppercase">In Pinecone &amp; DB</dt>
                 <dd class="mt-1 text-2xl font-semibold text-gray-900">
-                    @if($statsError)
-                        <span class="text-red-600 text-base">—</span>
+                    @if($reconcileSummary)
+                        {{ number_format((int) ($reconcileSummary['in_both_count'] ?? 0)) }}
                     @else
-                        {{ number_format($catalogCount) }}
+                        <span x-show="reconcileSummary === null && !reconcileLoading" class="text-gray-400 font-normal text-base">Run reconcile</span>
+                        <span x-show="reconcileSummary !== null" x-text="reconcileSummary ? Number(reconcileSummary.in_both_count || 0).toLocaleString() : ''"></span>
+                        <span x-show="reconcileLoading" class="text-gray-500 text-base">Loading…</span>
                     @endif
                 </dd>
-                <p class="mt-1 text-xs text-gray-500">Same total (per product spec: tenant-wide catalog count).</p>
+                <p class="mt-1 text-xs text-gray-500">Reconcile <code class="bg-gray-100 px-0.5">in_both_count</code> for this namespace.</p>
             </div>
             <div class="border border-gray-100 rounded-lg p-4">
-                <dt class="text-xs font-medium text-gray-500 uppercase">Pinecone vectors (namespace)</dt>
+                <dt class="text-xs font-medium text-gray-500 uppercase">Pinecone vectors</dt>
                 <dd class="mt-1 text-2xl font-semibold text-gray-900">
-                    <span x-show="reconcileSummary !== null" x-text="reconcileSummary ? Number(reconcileSummary.pinecone_vector_count || 0).toLocaleString() : ''"></span>
-                    <span x-show="reconcileSummary === null && !reconcileLoading" class="text-gray-400 font-normal text-base">Run reconcile</span>
-                    <span x-show="reconcileLoading" class="text-gray-500 text-base">Loading…</span>
+                    @if($reconcileSummary)
+                        {{ number_format((int) ($reconcileSummary['pinecone_vector_count'] ?? 0)) }}
+                    @else
+                        <span x-show="reconcileSummary === null && !reconcileLoading" class="text-gray-400 font-normal text-base">Run reconcile</span>
+                        <span x-show="reconcileSummary !== null" x-text="reconcileSummary ? Number(reconcileSummary.pinecone_vector_count || 0).toLocaleString() : ''"></span>
+                        <span x-show="reconcileLoading" class="text-gray-500 text-base">Loading…</span>
+                    @endif
                 </dd>
-                <p class="mt-1 text-xs text-gray-500">From reconcile summary (<code class="bg-gray-100 px-0.5">pinecone_vector_count</code>).</p>
+                <p class="mt-1 text-xs text-gray-500">Reconcile <code class="bg-gray-100 px-0.5">pinecone_vector_count</code> in this namespace.</p>
             </div>
         </dl>
 
@@ -116,7 +126,7 @@
             <ul class="text-xs text-gray-700 space-y-1 list-disc list-inside">
                 <li><span class="font-medium">WP</span> — Has WordPress post id in pipeline.</li>
                 <li><span class="font-medium">DB</span> — Row in pipeline <code class="bg-gray-100 px-0.5">videos</code> table.</li>
-                <li><span class="font-medium">Idx</span> — <code class="bg-gray-100 px-0.5">video_embeddings</code> row for the selected namespace.</li>
+                <li><span class="font-medium">Idx</span> — <code class="bg-gray-100 px-0.5">video_embeddings</code> row for <code class="bg-gray-100 px-0.5">{{ $selectedNamespace }}</code>.</li>
             </ul>
         </div>
 
@@ -132,6 +142,7 @@
             <span x-show="reconcileOk" class="text-sm text-green-700">Reconcile finished.</span>
         </div>
     </div>
+    @endif
 
     <div x-show="modalOpen"
          x-cloak

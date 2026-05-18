@@ -32,7 +32,38 @@ class NamespaceStudioTest extends FeatureTestCase
             ->assertOk()
             ->assertViewHas('hasNamespace', false)
             ->assertViewHas('rows', [])
+            ->assertDontSee('Namespace overview')
             ->assertDontSee('Test Video One');
+    }
+
+    public function test_overview_shows_namespace_scoped_counts(): void
+    {
+        $this->actingAsTenantUser();
+
+        $this->get(route('videos.namespace-studio', ['namespace' => 'v6_title_tags']))
+            ->assertOk()
+            ->assertSee('Namespace overview')
+            ->assertSee('Videos in namespace')
+            ->assertViewHas('namespaceCatalogCount', 2)
+            ->assertDontSee('Videos in catalog (WP sync)')
+            ->assertDontSee('All videos (tenant catalog)');
+    }
+
+    public function test_overview_shows_reconcile_summary_when_saved(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $this->actingAsTenantUser(null, $tenant);
+
+        EmbeddingReconcileSnapshot::query()->create([
+            'tenant_id' => $tenant->id,
+            'namespace' => 'v6_title_tags',
+            'payload' => \Tests\Support\BackendApiFake::reconcilePayload(),
+            'reconciled_at' => now()->subHour(),
+        ]);
+
+        $this->get(route('videos.namespace-studio', ['namespace' => 'v6_title_tags']))
+            ->assertOk()
+            ->assertSee('42');
     }
 
     public function test_catalog_requests_videos_for_selected_namespace(): void

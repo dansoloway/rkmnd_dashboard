@@ -76,17 +76,6 @@ class NamespaceStudioController extends Controller
         $page = max(1, (int) $request->input('page', 1));
         $offset = ($page - 1) * self::PAGE_SIZE;
 
-        $stats = null;
-        $statsError = null;
-        try {
-            $stats = $api->getWordPressStats();
-        } catch (\Exception $e) {
-            Log::warning('Namespace studio: stats failed', ['error' => $e->getMessage()]);
-            $statsError = $e->getMessage();
-        }
-
-        $totalVideos = (int) data_get($stats, 'stats.total_videos', 0);
-
         $fields = implode(',', [
             'id', 'wp_post_id', 'jwp_id', 'title', 'thumbnail_url',
             'audio_preview_url', 'embedding_namespaces',
@@ -95,31 +84,43 @@ class NamespaceStudioController extends Controller
         $videos = [];
         $totalRows = 0;
         $listError = null;
+        $namespaceCountError = null;
+        $namespaceCatalogCount = null;
         $totalPages = 1;
 
-        if ($viewMode === 'all' && $hasNamespace) {
+        if ($hasNamespace) {
             try {
                 $filters = [
-                    'limit' => self::PAGE_SIZE,
-                    'offset' => $offset,
-                    'fields' => $fields,
+                    'limit' => $viewMode === 'all' ? self::PAGE_SIZE : 1,
+                    'offset' => $viewMode === 'all' ? $offset : 0,
+                    'fields' => $viewMode === 'all' ? $fields : 'id',
                     'sort_by' => 'title',
                     'sort_order' => 'asc',
                     'embedding_namespace' => $namespace,
                 ];
-                if ($search !== '') {
+                if ($viewMode === 'all' && $search !== '') {
                     $filters['search'] = $search;
                 }
                 $response = $api->getVideos($filters);
-                $videos = $response['videos'] ?? $response;
-                if (! is_array($videos)) {
-                    $videos = [];
+                $namespaceCatalogCount = (int) ($response['total'] ?? 0);
+
+                if ($viewMode === 'all') {
+                    $videos = $response['videos'] ?? $response;
+                    if (! is_array($videos)) {
+                        $videos = [];
+                    }
+                    $totalRows = $namespaceCatalogCount;
+                    $totalPages = $totalRows > 0 ? (int) max(1, ceil($totalRows / self::PAGE_SIZE)) : 1;
                 }
-                $totalRows = (int) ($response['total'] ?? count($videos));
-                $totalPages = $totalRows > 0 ? (int) max(1, ceil($totalRows / self::PAGE_SIZE)) : 1;
             } catch (\Exception $e) {
-                Log::error('Namespace studio: video list failed', ['error' => $e->getMessage()]);
-                $listError = $e->getMessage();
+                Log::error('Namespace studio: namespace video query failed', [
+                    'error' => $e->getMessage(),
+                    'namespace' => $namespace,
+                ]);
+                $namespaceCountError = $e->getMessage();
+                if ($viewMode === 'all') {
+                    $listError = $e->getMessage();
+                }
             }
         }
 
@@ -137,6 +138,7 @@ class NamespaceStudioController extends Controller
 
         $snapshotForJs = null;
         $reconcileSnapshotDisplay = null;
+        $reconcileSummary = null;
         $tenantId = Auth::user()?->tenant_id;
         if ($tenantId && $hasNamespace) {
             $row = EmbeddingReconcileSnapshot::query()
@@ -152,6 +154,8 @@ class NamespaceStudioController extends Controller
                     'reconciled_at_display' => $reconcileSnapshotDisplay,
                     'payload' => $row->payload,
                 ];
+                $summary = $row->payload['summary'] ?? null;
+                $reconcileSummary = is_array($summary) ? $summary : null;
             }
         }
 
@@ -172,9 +176,9 @@ class NamespaceStudioController extends Controller
             'totalRows' => $totalRows,
             'pageSize' => self::PAGE_SIZE,
             'rows' => $rows,
-            'stats' => $stats,
-            'statsError' => $statsError,
-            'catalogCount' => $totalVideos,
+            'namespaceCatalogCount' => $namespaceCatalogCount,
+            'namespaceCountError' => $namespaceCountError,
+            'reconcileSummary' => $reconcileSummary,
             'listError' => $listError,
             'reconcileSnapshotDisplay' => $reconcileSnapshotDisplay,
             'reconcileSnapshotForJs' => $snapshotForJs,
