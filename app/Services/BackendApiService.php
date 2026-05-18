@@ -284,6 +284,28 @@ class BackendApiService
     }
 
     /**
+     * Submit thumbs up/down for a search result (POST /api/v1/search/feedback).
+     *
+     * @param  array{search_id: string, vote: int, wp_post_id?: int|null, rank?: int|null, pinecone_score?: float|null, source?: string}  $payload
+     * @return array<string, mixed>
+     */
+    public function submitSearchFeedback(array $payload): array
+    {
+        return $this->postJson('/api/v1/search/feedback', $payload);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function getSearchFeedback(int $limit = 100, int $days = 30): array
+    {
+        return $this->makeRequest('get', '/api/v1/tenant/search-feedback', [
+            'limit' => $limit,
+            'days' => $days,
+        ], 60);
+    }
+
+    /**
      * Search videos using AI semantic search
      *
      * @deprecated Use semanticSearchVideos() for clarity; retained for callers that pass positional args.

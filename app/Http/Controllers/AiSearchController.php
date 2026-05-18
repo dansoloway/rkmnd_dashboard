@@ -36,6 +36,7 @@ class AiSearchController extends Controller
             'videos' => [],
             'searchResponse' => null,
             'searchError' => null,
+            'searchId' => null,
         ]);
     }
 
@@ -63,6 +64,7 @@ class AiSearchController extends Controller
         $videos = [];
         $searchResponse = null;
         $searchError = null;
+        $searchId = null;
 
         try {
             $payload = [
@@ -82,6 +84,9 @@ class AiSearchController extends Controller
 
             $searchResponse = $api->semanticSearchVideos($payload);
             $videos = $searchResponse['videos'] ?? [];
+            $searchId = is_string($searchResponse['search_id'] ?? null)
+                ? $searchResponse['search_id']
+                : null;
         } catch (\Exception $e) {
             Log::warning('AI semantic search from dashboard failed', [
                 'message' => $e->getMessage(),
@@ -103,7 +108,52 @@ class AiSearchController extends Controller
             'videos' => is_array($videos) ? $videos : [],
             'searchResponse' => $searchResponse,
             'searchError' => $searchError,
+            'searchId' => $searchId,
         ]);
+    }
+
+    public function feedback(Request $request)
+    {
+        $validated = $request->validate([
+            'search_id' => 'required|string|max:64',
+            'vote' => 'required|integer|in:1,-1',
+            'wp_post_id' => 'nullable|integer|min:1',
+            'rank' => 'nullable|integer|min:1|max:100',
+            'pinecone_score' => 'nullable|numeric',
+        ]);
+
+        try {
+            $api = $this->getApiService();
+            $payload = [
+                'search_id' => $validated['search_id'],
+                'vote' => (int) $validated['vote'],
+                'source' => 'dashboard',
+            ];
+            if (isset($validated['wp_post_id'])) {
+                $payload['wp_post_id'] = (int) $validated['wp_post_id'];
+            }
+            if (isset($validated['rank'])) {
+                $payload['rank'] = (int) $validated['rank'];
+            }
+            if (isset($validated['pinecone_score'])) {
+                $payload['pinecone_score'] = (float) $validated['pinecone_score'];
+            }
+
+            $result = $api->submitSearchFeedback($payload);
+
+            return response()->json([
+                'ok' => true,
+                'feedback_id' => $result['feedback_id'] ?? null,
+                'vote' => $result['vote'] ?? (int) $validated['vote'],
+            ]);
+        } catch (\Exception $e) {
+            Log::warning('Search feedback submit failed', ['message' => $e->getMessage()]);
+
+            return response()->json([
+                'ok' => false,
+                'message' => $e->getMessage(),
+            ], 502);
+        }
     }
 
     protected function getApiService(): BackendApiService

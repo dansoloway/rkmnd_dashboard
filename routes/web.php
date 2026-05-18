@@ -41,6 +41,7 @@ Route::middleware(['auth'])->group(function () {
     // Semantic search (POST /api/v1/search playground)
     Route::get('/ai-search', [App\Http\Controllers\AiSearchController::class, 'index'])->name('ai-search.index');
     Route::post('/ai-search', [App\Http\Controllers\AiSearchController::class, 'search'])->name('ai-search.search');
+    Route::post('/ai-search/feedback', [App\Http\Controllers\AiSearchController::class, 'feedback'])->name('ai-search.feedback');
 
     // Analytics
     Route::get('/analytics', [App\Http\Controllers\AnalyticsController::class, 'index'])->name('analytics.index');

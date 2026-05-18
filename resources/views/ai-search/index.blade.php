@@ -98,8 +98,25 @@
     </div>
 
     @if(($searchResponse !== null) || count($videos ?? []) > 0)
-        <div class="bg-white rounded-lg shadow-sm p-6 space-y-3">
-            <h2 class="text-xl font-semibold text-gray-900">Results</h2>
+        <div
+            class="bg-white rounded-lg shadow-sm p-6 space-y-3"
+            @if(!empty($searchId))
+                x-data="searchFeedbackPanel({
+                    searchId: @js($searchId),
+                    feedbackUrl: @js(route('ai-search.feedback')),
+                    csrf: @js(csrf_token()),
+                })"
+            @endif
+        >
+            <div class="flex flex-wrap items-center justify-between gap-2">
+                <h2 class="text-xl font-semibold text-gray-900">Results</h2>
+                @if(!empty($searchId))
+                    <p class="text-xs text-gray-500">
+                        Rate results to improve search quality.
+                        <span class="font-mono text-gray-400" title="Search session ID">{{ Str::limit($searchId, 12, '…') }}</span>
+                    </p>
+                @endif
+            </div>
             @if($searchResponse && ($searchResponse['status'] ?? '') === 'success' && ((($searchResponse['message'] ?? null) !== null) || (($searchResponse['no_recommendation_reason'] ?? null) !== null)))
                 <div class="text-sm border-l-4 border-amber-400 pl-3 py-2 bg-amber-50 text-gray-800">
                     @if(($searchResponse['no_recommendation_reason'] ?? null) === 'off_topic')
@@ -112,14 +129,31 @@
             @endif
             @if(count($videos ?? []) === 0)
                 <p class="text-gray-600 text-sm">No rows in <code class="bg-gray-100 px-1">videos</code> for this response.</p>
+                @if(!empty($searchId))
+                    <div class="flex items-center gap-2 pt-2 border-t border-gray-100">
+                        <span class="text-sm text-gray-600">Was this search helpful?</span>
+                        <button type="button" @click="submit(1, null, null, null)" :disabled="busy"
+                            class="px-2 py-1 rounded border text-sm"
+                            :class="voteFor(null) === 1 ? 'bg-green-100 border-green-400 text-green-800' : 'border-gray-300 hover:bg-gray-50'"
+                            title="Thumbs up for this search">👍</button>
+                        <button type="button" @click="submit(-1, null, null, null)" :disabled="busy"
+                            class="px-2 py-1 rounded border text-sm"
+                            :class="voteFor(null) === -1 ? 'bg-red-100 border-red-400 text-red-800' : 'border-gray-300 hover:bg-gray-50'"
+                            title="Thumbs down for this search">👎</button>
+                        <span x-show="error" x-text="error" class="text-xs text-red-600 ml-2"></span>
+                    </div>
+                @endif
             @else
                 <ul class="divide-y divide-gray-100">
                     @foreach(($videos ?? []) as $idx => $row)
                         @php
                             $meta = isset($row['metadata']) && is_array($row['metadata']) ? $row['metadata'] : [];
                             $score = $row['score'] ?? $row['_score'] ?? $row['similarity'] ?? null;
+                            $wpPostId = isset($meta['wp_post_id']) && is_numeric($meta['wp_post_id']) ? (int) $meta['wp_post_id'] : null;
+                            $numericScore = ($score !== null && is_numeric($score)) ? (float) $score : null;
                         @endphp
-                        <li class="py-4">
+                        <li class="py-4 flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
+                            <div class="min-w-0 flex-1">
                             <div class="font-medium text-gray-900">{{ $meta['title'] ?? '(No title)' }}</div>
                             <div class="text-sm text-gray-600 mt-1 flex flex-wrap gap-x-4 gap-y-1">
                                 <span>WP post ID: {{ $meta['wp_post_id'] ?? '—' }}</span>
@@ -147,6 +181,24 @@
                                     @endif
                                 </p>
                             @endif
+                            </div>
+                            @if(!empty($searchId))
+                                <div class="flex items-center gap-1 shrink-0">
+                                    <span class="text-xs text-gray-500 mr-1 hidden sm:inline">Relevant?</span>
+                                    <button type="button"
+                                        @click="submit(1, {{ $wpPostId ?? 'null' }}, {{ $idx + 1 }}, @js($numericScore))"
+                                        :disabled="busy"
+                                        class="px-2 py-1 rounded border text-sm"
+                                        :class="voteFor({{ $wpPostId ?? 'null' }}) === 1 ? 'bg-green-100 border-green-400 text-green-800' : 'border-gray-300 hover:bg-gray-50'"
+                                        title="Good match">👍</button>
+                                    <button type="button"
+                                        @click="submit(-1, {{ $wpPostId ?? 'null' }}, {{ $idx + 1 }}, @js($numericScore))"
+                                        :disabled="busy"
+                                        class="px-2 py-1 rounded border text-sm"
+                                        :class="voteFor({{ $wpPostId ?? 'null' }}) === -1 ? 'bg-red-100 border-red-400 text-red-800' : 'border-gray-300 hover:bg-gray-50'"
+                                        title="Poor match">👎</button>
+                                </div>
+                            @endif
                         </li>
                     @endforeach
                 </ul>
@@ -161,4 +213,63 @@
         </div>
     @endif
 </div>
+
+@if(!empty($searchId))
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('searchFeedbackPanel', (config) => ({
+        searchId: config.searchId,
+        feedbackUrl: config.feedbackUrl,
+        csrf: config.csrf,
+        votes: {},
+        busy: false,
+        error: '',
+        voteKey(wpPostId) {
+            return wpPostId === null || wpPostId === undefined ? 'query' : String(wpPostId);
+        },
+        voteFor(wpPostId) {
+            return this.votes[this.voteKey(wpPostId)] ?? null;
+        },
+        async submit(vote, wpPostId, rank, pineconeScore) {
+            this.error = '';
+            const key = this.voteKey(wpPostId);
+            if (this.votes[key] === vote) {
+                return;
+            }
+            this.busy = true;
+            const body = { search_id: this.searchId, vote: vote };
+            if (wpPostId !== null && wpPostId !== undefined) {
+                body.wp_post_id = wpPostId;
+            }
+            if (rank !== null && rank !== undefined) {
+                body.rank = rank;
+            }
+            if (pineconeScore !== null && pineconeScore !== undefined) {
+                body.pinecone_score = pineconeScore;
+            }
+            try {
+                const res = await fetch(this.feedbackUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': this.csrf,
+                    },
+                    body: JSON.stringify(body),
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok || !data.ok) {
+                    throw new Error(data.message || 'Feedback failed');
+                }
+                this.votes[key] = vote;
+            } catch (e) {
+                this.error = e.message || 'Could not save feedback';
+            } finally {
+                this.busy = false;
+            }
+        },
+    }));
+});
+</script>
+@endif
 @endsection

@@ -76,8 +76,20 @@ class BackendApiFake
                 return Http::response(['logs' => []]);
             }
 
+            if (str_contains($path, '/api/v1/search/feedback')) {
+                return Http::response([
+                    'status' => 'success',
+                    'feedback_id' => 1,
+                    'vote' => (int) (json_decode($request->body(), true)['vote'] ?? 1),
+                ]);
+            }
+
             if (str_contains($path, '/api/v1/search')) {
-                return Http::response(['videos' => [], 'query' => '']);
+                return Http::response(self::searchPayload());
+            }
+
+            if (str_contains($path, '/api/v1/tenant/search-feedback')) {
+                return Http::response(['feedback' => [], 'count' => 0]);
             }
 
             if (str_contains($path, '/api/v1/tenant/queries')) {
@@ -268,6 +280,28 @@ class BackendApiFake
     {
         return [
             'analytics' => ['searches' => 0],
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public static function searchPayload(): array
+    {
+        return [
+            'status' => 'success',
+            'search_id' => 'test-search-session-001',
+            'videos' => [
+                [
+                    'score' => 0.91,
+                    'metadata' => [
+                        'title' => 'Hip Mobility Flow',
+                        'wp_post_id' => 5001,
+                        'slug' => 'hip-mobility-flow',
+                        'instructor' => 'Jane Doe',
+                    ],
+                ],
+            ],
         ];
     }
 }
