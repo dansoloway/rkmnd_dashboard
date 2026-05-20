@@ -2,45 +2,29 @@
 
 @section('content')
 <div class="space-y-6">
-    <!-- Breadcrumb -->
     <nav class="flex" aria-label="Breadcrumb">
-        <ol class="inline-flex items-center space-x-1 md:space-x-3">
-            <li>
-                <a href="{{ route('dashboard') }}" class="text-gray-700 hover:text-blue-600">
-                    Home
-                </a>
-            </li>
+        <ol class="inline-flex items-center space-x-1 md:space-x-3 text-sm">
+            <li><a href="{{ route('dashboard') }}" class="text-gray-700 hover:text-blue-600">Home</a></li>
             <li>
                 <div class="flex items-center">
-                    <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
-                    </svg>
-                    <a href="{{ route('videos.index') }}" class="ml-1 text-gray-700 hover:text-blue-600">
-                        Videos
-                    </a>
+                    <svg class="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>
+                    <a href="{{ route('videos.index') }}" class="ml-1 text-gray-700 hover:text-blue-600">Videos</a>
                 </div>
             </li>
             <li aria-current="page">
                 <div class="flex items-center">
-                    <svg class="w-6 h-6 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
-                    </svg>
-                    <span class="ml-1 text-gray-500">{{ $video['title'] }}</span>
+                    <svg class="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>
+                    <span class="ml-1 text-gray-500 truncate max-w-[12rem] md:max-w-md">{{ $video['title'] ?? 'Video' }}</span>
                 </div>
             </li>
         </ol>
     </nav>
 
-    <!-- Flash Messages -->
     @if(session('success'))
-        <div class="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg">
-            {{ session('success') }}
-        </div>
+        <div class="bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-lg">{{ session('success') }}</div>
     @endif
     @if(session('error'))
-        <div class="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">
-            {{ session('error') }}
-        </div>
+        <div class="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg">{{ session('error') }}</div>
     @endif
 
     @php
@@ -56,496 +40,206 @@
             $audioPlayUrl .= str_contains($audioPlayUrl, '?') ? '&' : '?';
             $audioPlayUrl .= 'v='.$audioCacheBuster;
         }
+        $displayDuration = $video['run_time'] ?? $video['video_time'] ?? null;
+        $displayDescription = $video['short_description'] ?? $video['long_description'] ?? null;
+        $categoryLabel = $video['category_for_ai'] ?? $video['video_category'] ?? null;
+        $audioStatus = !empty($audioPreviews[0]['generation_status']) ? $audioPreviews[0]['generation_status'] : (empty($audioPreviews) ? null : 'ready');
+        $syncLabel = $video['sync_status'] ?? null;
     @endphp
 
-    <!-- Main Content -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <!-- Video Details (Left Column) -->
         <div class="lg:col-span-2 space-y-6">
-            <!-- Video Thumbnail -->
+            {{-- Hero: thumbnail + title + meta + audio (once) --}}
             <div class="bg-white rounded-lg shadow-sm overflow-hidden">
                 @if(!empty($video['thumbnail_url']))
-                    <img 
-                        src="{{ $video['thumbnail_url'] }}" 
-                        alt="{{ $video['title'] }}"
-                        class="w-full h-96 object-cover"
-                        id="video-thumbnail-img"
-                    >
+                    <img src="{{ $video['thumbnail_url'] }}" alt="{{ $video['title'] }}" class="w-full max-h-80 object-cover" id="video-thumbnail-img">
                 @else
-                    <div class="w-full h-96 bg-gray-200 flex items-center justify-center" id="video-thumbnail-placeholder">
-                        <svg class="h-24 w-24 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="w-full h-64 bg-gray-200 flex items-center justify-center" id="video-thumbnail-placeholder">
+                        <svg class="h-16 w-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
                         </svg>
                     </div>
                 @endif
 
-                <!-- Audio Preview Player -->
-                @if($audioPlayUrl)
-                    <div class="p-6 bg-gray-50 border-t">
-                        <div class="flex items-center space-x-3 mb-2">
-                            <svg class="h-5 w-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M18 3a1 1 0 00-1.196-.98l-10 2A1 1 0 006 5v9.114A4.369 4.369 0 005 14c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V7.82l8-1.6v5.894A4.37 4.37 0 0015 12c-1.657 0-3 .895-3 2s1.343 2 3 2 3-.895 3-2V3z"></path>
-                            </svg>
-                            <h3 class="text-lg font-heading font-medium text-gray-900">Audio Preview</h3>
-                        </div>
-                        <audio controls class="w-full" preload="none">
-                            <source src="{{ $audioPlayUrl }}" type="audio/mpeg">
-                            Your browser does not support the audio element.
-                        </audio>
-                        <p class="mt-2 text-xs text-gray-500">
-                            Edit the script in the sidebar to regenerate this file (ElevenLabs → S3).
-                        </p>
-                        <a href="{{ $audioPlayUrl }}" target="_blank" rel="noopener" class="mt-1 inline-block text-xs text-blue-600 hover:underline break-all">
-                            Open audio file
-                        </a>
+                <div class="p-6 border-t border-gray-100">
+                    <h1 class="text-2xl font-heading font-bold text-gray-900">{{ $video['title'] }}</h1>
+
+                    <div class="flex flex-wrap items-center gap-2 mt-3 text-sm text-gray-600">
+                        @if(!empty($video['instructor']))
+                            <span>{{ $video['instructor'] }}</span>
+                        @endif
+                        @if($displayDuration)
+                            <span class="text-gray-300">·</span>
+                            <span>{{ $displayDuration }}</span>
+                        @endif
+                        @if($categoryLabel)
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">{{ $categoryLabel }}</span>
+                        @endif
+                        @if(!empty($video['post_status']))
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">{{ $video['post_status'] }}</span>
+                        @endif
+                        @if($syncLabel)
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $syncLabel === 'synced' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-700' }}">{{ $syncLabel }}</span>
+                        @endif
                     </div>
-                @endif
+
+                    @if($audioPlayUrl)
+                        <div class="mt-5 pt-5 border-t border-gray-100">
+                            <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+                                <h2 class="text-sm font-medium text-gray-900">Audio preview</h2>
+                                @if($audioStatus)
+                                    <span class="text-xs text-gray-500">{{ $audioStatus }}</span>
+                                @endif
+                            </div>
+                            <audio controls class="w-full" preload="none">
+                                <source src="{{ $audioPlayUrl }}" type="audio/mpeg">
+                            </audio>
+                            <p class="mt-2 text-xs text-gray-500">
+                                <a href="#edit-audio" class="text-blue-600 hover:underline">Edit script</a> in the sidebar to regenerate.
+                                <a href="{{ $audioPlayUrl }}" target="_blank" rel="noopener" class="text-blue-600 hover:underline ml-2">Open file</a>
+                            </p>
+                        </div>
+                    @else
+                        <p class="mt-4 text-sm text-gray-500">No audio preview yet. Add a script in the sidebar to generate one.</p>
+                    @endif
+                </div>
             </div>
 
-            <!-- Video Information -->
+            @if($displayDescription)
+                <div class="bg-white rounded-lg shadow-sm p-6">
+                    <h2 class="text-lg font-heading font-medium text-gray-900 mb-2">Description</h2>
+                    <p class="text-gray-700 text-sm whitespace-pre-wrap">{{ $displayDescription }}</p>
+                    @if(!empty($video['long_description']) && !empty($video['short_description']) && $video['long_description'] !== $video['short_description'])
+                        <details class="mt-4">
+                            <summary class="text-sm text-blue-600 cursor-pointer hover:underline">Full description</summary>
+                            <p class="mt-2 text-gray-700 text-sm whitespace-pre-wrap">{{ $video['long_description'] }}</p>
+                        </details>
+                    @endif
+                </div>
+            @endif
+
             <div class="bg-white rounded-lg shadow-sm p-6">
-                <h1 class="text-3xl font-heading font-bold text-gray-900 mb-4">
-                    {{ $video['title'] }}
-                </h1>
-
-                <!-- Meta Info -->
-                <div class="flex flex-wrap gap-4 mb-6 text-sm text-gray-600">
-                    @if(!empty($video['instructor']))
-                        <div class="flex items-center">
-                            <svg class="h-5 w-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                            </svg>
-                            {{ $video['instructor'] }}
-                        </div>
-                    @endif
-
-                    @if(!empty($video['duration']))
-                        <div class="flex items-center">
-                            <svg class="h-5 w-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                            {{ $video['duration'] }}
-                        </div>
-                    @endif
-
-                    @if(!empty($video['difficulty']))
-                        <div class="flex items-center">
-                            <svg class="h-5 w-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                            </svg>
-                            {{ $video['difficulty'] }}
-                        </div>
-                    @endif
-
-                    @if(!empty($video['category']))
+                <h2 class="text-lg font-heading font-medium text-gray-900 mb-4">Catalog &amp; IDs</h2>
+                <dl class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 text-sm">
+                    <div>
+                        <dt class="text-gray-500">Pipeline ID</dt>
+                        <dd class="mt-0.5 text-gray-900 font-mono">{{ $video['id'] ?? '—' }}</dd>
+                    </div>
+                    @if(!empty($video['wp_post_id']))
                         <div>
-                            <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
-                                {{ $video['category'] }}
-                            </span>
+                            <dt class="text-gray-500">WordPress post</dt>
+                            <dd class="mt-0.5 text-gray-900">{{ $video['wp_post_id'] }}</dd>
                         </div>
                     @endif
+                    @if(!empty($video['jwp_id']))
+                        <div class="sm:col-span-2">
+                            <dt class="text-gray-500">JW Player ID</dt>
+                            <dd class="mt-0.5 text-gray-900 font-mono text-xs break-all">{{ $video['jwp_id'] }}</dd>
+                        </div>
+                    @endif
+                    @if(!empty($video['body_area']))
+                        <div><dt class="text-gray-500">Body area</dt><dd class="mt-0.5 text-gray-900">{{ $video['body_area'] }}</dd></div>
+                    @endif
+                    @if(!empty($video['helps_with']))
+                        <div><dt class="text-gray-500">Helps with</dt><dd class="mt-0.5 text-gray-900">{{ $video['helps_with'] }}</dd></div>
+                    @endif
+                    @if(!empty($video['props']))
+                        <div><dt class="text-gray-500">Props</dt><dd class="mt-0.5 text-gray-900">{{ $video['props'] }}</dd></div>
+                    @endif
+                    @if(!empty($video['video_topic']))
+                        <div><dt class="text-gray-500">Topic</dt><dd class="mt-0.5 text-gray-900">{{ $video['video_topic'] }}</dd></div>
+                    @endif
+                    @if(!empty($video['content_tags']))
+                        <div class="sm:col-span-2"><dt class="text-gray-500">Content tags</dt><dd class="mt-0.5 text-gray-900">{{ $video['content_tags'] }}</dd></div>
+                    @endif
+                    @if(!empty($video['created_at']))
+                        <div><dt class="text-gray-500">Created</dt><dd class="mt-0.5 text-gray-900">{{ date('M j, Y', strtotime($video['created_at'])) }}</dd></div>
+                    @endif
+                    @if(!empty($video['updated_at']))
+                        <div><dt class="text-gray-500">Updated</dt><dd class="mt-0.5 text-gray-900">{{ date('M j, Y', strtotime($video['updated_at'])) }}</dd></div>
+                    @endif
+                </dl>
+            </div>
+
+            @include('videos.partials.show-embedding-search')
+
+            <details class="bg-white rounded-lg shadow-sm border border-gray-200">
+                <summary class="cursor-pointer px-6 py-4 text-sm font-medium text-gray-600 hover:text-gray-900">
+                    Advanced: raw video record (JSON)
+                </summary>
+                <div class="px-6 pb-4">
+                    <pre class="text-xs overflow-auto max-h-96 font-mono bg-gray-50 p-4 rounded border border-gray-200">{{ json_encode($video, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) }}</pre>
                 </div>
-
-                <!-- Description -->
-                @if(!empty($video['description']))
-                    <div class="prose max-w-none">
-                        <h3 class="text-lg font-heading font-medium text-gray-900 mb-2">Description</h3>
-                        <p class="text-gray-700">{{ $video['description'] }}</p>
-                    </div>
-                @endif
-
-                <!-- Additional Details -->
-                <div class="mt-6 border-t pt-6">
-                    <dl class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        @if(!empty($video['id']))
-                            <div>
-                                <dt class="text-sm font-medium text-gray-500">Video ID</dt>
-                                <dd class="mt-1 text-sm text-gray-900">{{ $video['id'] }}</dd>
-                            </div>
-                        @endif
-
-                        @if(!empty($video['wp_post_id']))
-                            <div>
-                                <dt class="text-sm font-medium text-gray-500">WordPress Post ID</dt>
-                                <dd class="mt-1 text-sm text-gray-900">{{ $video['wp_post_id'] }}</dd>
-                            </div>
-                        @endif
-
-                        @if(!empty($video['jwp_id']))
-                            <div>
-                                <dt class="text-sm font-medium text-gray-500">JW Player ID</dt>
-                                <dd class="mt-1 text-sm text-gray-900 font-mono text-xs">{{ $video['jwp_id'] }}</dd>
-                            </div>
-                        @endif
-
-                        @if(!empty($video['body_area']))
-                            <div>
-                                <dt class="text-sm font-medium text-gray-500">Body Area</dt>
-                                <dd class="mt-1 text-sm text-gray-900">{{ $video['body_area'] }}</dd>
-                            </div>
-                        @endif
-
-                        @if(!empty($video['helps_with']))
-                            <div>
-                                <dt class="text-sm font-medium text-gray-500">Helps With</dt>
-                                <dd class="mt-1 text-sm text-gray-900">{{ $video['helps_with'] }}</dd>
-                            </div>
-                        @endif
-
-                        @if(!empty($video['props']))
-                            <div>
-                                <dt class="text-sm font-medium text-gray-500">Props Needed</dt>
-                                <dd class="mt-1 text-sm text-gray-900">{{ $video['props'] }}</dd>
-                            </div>
-                        @endif
-
-                        @if(!empty($video['video_time']))
-                            <div>
-                                <dt class="text-sm font-medium text-gray-500">Duration</dt>
-                                <dd class="mt-1 text-sm text-gray-900">{{ $video['video_time'] }}</dd>
-                            </div>
-                        @endif
-
-                        @if(!empty($video['video_category']))
-                            <div>
-                                <dt class="text-sm font-medium text-gray-500">Categories</dt>
-                                <dd class="mt-1 text-sm text-gray-900">{{ $video['video_category'] }}</dd>
-                            </div>
-                        @endif
-
-                        @if(!empty($video['created_at']))
-                            <div>
-                                <dt class="text-sm font-medium text-gray-500">Created</dt>
-                                <dd class="mt-1 text-sm text-gray-900">{{ date('M d, Y', strtotime($video['created_at'])) }}</dd>
-                            </div>
-                        @endif
-
-                        @if(!empty($video['updated_at']))
-                            <div>
-                                <dt class="text-sm font-medium text-gray-500">Last Updated</dt>
-                                <dd class="mt-1 text-sm text-gray-900">{{ date('M d, Y', strtotime($video['updated_at'])) }}</dd>
-                            </div>
-                        @endif
-                    </dl>
-                </div>
-            </div>
-
-            <!-- Debug: All Database Fields -->
-            <div class="bg-yellow-50 border border-yellow-200 rounded-lg shadow-sm p-6">
-                <details class="cursor-pointer">
-                    <summary class="text-lg font-heading font-medium text-gray-900 mb-4 flex items-center">
-                        <svg class="h-5 w-5 mr-2 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                        </svg>
-                        Debug: All Database Fields
-                    </summary>
-                    <div class="mt-4 bg-white rounded p-4 border border-yellow-300">
-                        <pre class="text-xs overflow-auto max-h-96 font-mono bg-gray-50 p-4 rounded border">{{ json_encode($video, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) }}</pre>
-                    </div>
-                </details>
-            </div>
-
-            <!-- AI Processing Info -->
-            <div class="bg-white rounded-lg shadow-sm p-6">
-                <h3 class="text-lg font-heading font-medium text-gray-900 mb-4">AI Processing</h3>
-                
-                <!-- Embeddings -->
-                @if(!empty($embeddings))
-                    <div class="mb-6" id="embedding-section">
-                        <div class="flex items-center justify-between mb-2">
-                            <h4 class="text-sm font-medium text-gray-700">Vector Embeddings</h4>
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                ✓ Generated
-                            </span>
-                        </div>
-
-                        @include('videos.partials.computed-v6-embedding-preview')
-
-                        <p class="text-xs text-gray-500 mb-2">
-                            Default selection is the Pinecone namespace used by <code class="bg-gray-100 px-1 rounded">POST /api/v1/search</code> when the client omits <code class="bg-gray-100 px-1 rounded">namespace</code>
-                            (<span class="font-mono">{{ $defaultSearchNamespace ?? config('backend.default_search_namespace') }}</span>).
-                            The dropdown only includes rows stored in <code class="bg-gray-100 px-1 rounded">video_embeddings</code> (not every Pinecone namespace).
-                        </p>
-                        @php
-                            $searchNsExplain = $defaultSearchNamespace ?? config('backend.default_search_namespace', 'v6_title_tags');
-                            $hasSearchEmbeddingRow = false;
-                            foreach ($embeddings as $e) {
-                                if (($e['namespace'] ?? '') === $searchNsExplain) {
-                                    $hasSearchEmbeddingRow = true;
-                                    break;
-                                }
-                            }
-                        @endphp
-                        @if(!$hasSearchEmbeddingRow)
-                            <div class="mb-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-950">
-                                <p class="font-medium">No <code class="bg-amber-100/80 px-1 rounded font-mono">{{ $searchNsExplain }}</code> embedding row for this video.</p>
-                                <p class="mt-1.5 leading-relaxed text-amber-900/95">
-                                    So you only see tenant embeddings (e.g. <code class="bg-amber-100/80 px-1 rounded font-mono">tenant_1_comprehensive</code> or <code class="bg-amber-100/80 px-1 rounded font-mono">tenant_1_tenant_comprehensive</code>).
-                                    To get a public-search row, the post must be eligible (published <code class="bg-amber-100/80 px-1 rounded">video</code>, JW Player id, allowed <code class="bg-amber-100/80 px-1 rounded">category_for_ai</code>), then run your usual sync / processing or backfill <code class="bg-amber-100/80 px-1 rounded">v6_title_tags</code> on the AI pipeline server.
-                                </p>
-                            </div>
-                        @endif
-                        <label for="embedding-picker" class="block text-xs font-medium text-gray-600 mb-1">Embedding</label>
-                        <select id="embedding-picker" name="embedding-picker"
-                                class="w-full max-w-xl text-sm border border-gray-300 rounded-md px-3 py-2 mb-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white">
-                            @foreach($embeddings as $idx => $embedding)
-                                <option value="{{ $idx }}" @if($idx === ($defaultEmbeddingIndex ?? 0)) selected @endif>
-                                    {{ $embedding['namespace'] ?? 'N/A' }}
-                                    @if(!empty($embedding['embedding_scheme']))
-                                        · {{ $embedding['embedding_scheme'] }}
-                                    @endif
-                                </option>
-                            @endforeach
-                        </select>
-
-                        @foreach($embeddings as $idx => $embedding)
-                            <div class="embedding-detail-panel border border-gray-200 rounded-lg p-4 text-xs space-y-3 bg-gray-50 {{ $idx === ($defaultEmbeddingIndex ?? 0) ? '' : 'hidden' }}"
-                                 data-embedding-panel="{{ $idx }}">
-                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                    <div class="flex justify-between gap-2">
-                                        <span class="text-gray-500 shrink-0">Namespace</span>
-                                        <span class="font-mono text-gray-900 text-right break-all">{{ $embedding['namespace'] ?? 'N/A' }}</span>
-                                    </div>
-                                    <div class="flex justify-between gap-2">
-                                        <span class="text-gray-500 shrink-0">Scheme</span>
-                                        <span class="text-gray-900 text-right">{{ $embedding['embedding_scheme'] ?? 'N/A' }}</span>
-                                    </div>
-                                    <div class="flex justify-between gap-2 sm:col-span-2">
-                                        <span class="text-gray-500 shrink-0">Pinecone ID</span>
-                                        <span class="font-mono text-gray-900 text-right break-all">{{ $embedding['pinecone_id'] ?? 'N/A' }}</span>
-                                    </div>
-                                    <div class="flex justify-between gap-2">
-                                        <span class="text-gray-500 shrink-0">Created</span>
-                                        <span class="text-gray-900">{{ !empty($embedding['created_at']) ? date('M d, Y g:i A', strtotime($embedding['created_at'])) : 'N/A' }}</span>
-                                    </div>
-                                    <div class="flex justify-between gap-2">
-                                        <span class="text-gray-500 shrink-0">Updated</span>
-                                        <span class="text-gray-900">{{ !empty($embedding['updated_at']) ? date('M d, Y g:i A', strtotime($embedding['updated_at'])) : 'N/A' }}</span>
-                                    </div>
-                                </div>
-
-                                @if(!empty($embedding['embedding_fields']))
-                                    <div>
-                                        <span class="text-gray-500 block mb-1.5">Fields embedded</span>
-                                        @if(is_array($embedding['embedding_fields']))
-                                            <div class="flex flex-wrap gap-1.5">
-                                                @foreach($embedding['embedding_fields'] as $field)
-                                                    <span class="inline-flex items-center rounded-full bg-blue-50 text-blue-900 px-2.5 py-0.5 text-xs font-medium border border-blue-100">{{ is_scalar($field) ? $field : json_encode($field) }}</span>
-                                                @endforeach
-                                            </div>
-                                        @else
-                                            <code class="block text-xs bg-white border rounded p-2 break-all">{{ $embedding['embedding_fields'] }}</code>
-                                        @endif
-                                    </div>
-                                @endif
-
-                                @php
-                                    $driftNs = $defaultSearchNamespace ?? config('backend.default_search_namespace', 'v6_title_tags');
-                                    $storedTxt = trim((string) ($embedding['embedding_text'] ?? ''));
-                                    $computedTxt = trim((string) ($computedV6EmbeddingText ?? ''));
-                                    $showDrift = (($embedding['namespace'] ?? '') === $driftNs)
-                                        && $storedTxt !== ''
-                                        && $computedTxt !== ''
-                                        && $storedTxt !== $computedTxt;
-                                @endphp
-                                @if($showDrift)
-                                    <p class="text-xs text-gray-500 italic">Stored snapshot differs from the computed preview above (metadata may have changed since upsert).</p>
-                                @endif
-
-                                <div>
-                                    <span class="text-gray-500 block mb-1.5">Text embedded (exact input to the model)</span>
-                                    @if(!empty($embedding['embedding_text']))
-                                        <pre class="whitespace-pre-wrap break-words text-xs text-gray-900 bg-white border border-gray-200 rounded p-3 max-h-96 overflow-auto font-mono">{{ $embedding['embedding_text'] }}</pre>
-                                    @else
-                                        <p class="text-gray-400 italic">No embedding text stored for this row.</p>
-                                    @endif
-                                </div>
-                            </div>
-                        @endforeach
-                    </div>
-
-                    <script>
-                        (function () {
-                            var sel = document.getElementById('embedding-picker');
-                            if (!sel) return;
-                            function showPanel(index) {
-                                document.querySelectorAll('#embedding-section [data-embedding-panel]').forEach(function (el) {
-                                    var on = String(el.getAttribute('data-embedding-panel')) === String(index);
-                                    if (on) {
-                                        el.classList.remove('hidden');
-                                    } else {
-                                        el.classList.add('hidden');
-                                    }
-                                });
-                            }
-                            sel.addEventListener('change', function () {
-                                showPanel(sel.value);
-                            });
-                            showPanel(sel.value);
-                        })();
-                    </script>
-                @else
-                    <div class="mb-6">
-                        <div class="flex items-center justify-between mb-2">
-                            <h4 class="text-sm font-medium text-gray-700">Vector Embeddings</h4>
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                                ⏳ Pending
-                            </span>
-                        </div>
-                        @include('videos.partials.computed-v6-embedding-preview')
-                        <p class="text-xs text-gray-500">No embeddings generated yet</p>
-                    </div>
-                @endif
-
-                <!-- Audio Previews -->
-                @if(!empty($audioPreviews))
-                    <div>
-                        <div class="flex items-center justify-between mb-2">
-                            <h4 class="text-sm font-medium text-gray-700">Audio Preview</h4>
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                ✓ Generated
-                            </span>
-                        </div>
-                        @foreach($audioPreviews as $audio)
-                            <div class="bg-gray-50 rounded-lg p-3 text-xs space-y-2">
-                                <div class="flex justify-between">
-                                    <span class="text-gray-500">S3 Key:</span>
-                                    <span class="font-mono text-gray-900 text-right break-all">{{ $audio['s3_key'] ?? 'N/A' }}</span>
-                                </div>
-                                @if(!empty($audio['duration_seconds']))
-                                    <div class="flex justify-between">
-                                        <span class="text-gray-500">Duration:</span>
-                                        <span class="text-gray-900">{{ $audio['duration_seconds'] }} seconds</span>
-                                    </div>
-                                @endif
-                                @if(!empty($audio['file_size_bytes']))
-                                    <div class="flex justify-between">
-                                        <span class="text-gray-500">File Size:</span>
-                                        <span class="text-gray-900">{{ number_format($audio['file_size_bytes'] / 1024, 2) }} KB</span>
-                                    </div>
-                                @endif
-                                <div class="flex justify-between">
-                                    <span class="text-gray-500">Voice ID:</span>
-                                    <span class="font-mono text-gray-900">{{ $audio['voice_id'] ?? 'N/A' }}</span>
-                                </div>
-                                <div class="flex justify-between">
-                                    <span class="text-gray-500">Status:</span>
-                                    <span class="text-gray-900">{{ $audio['generation_status'] ?? 'N/A' }}</span>
-                                </div>
-                                
-                                <!-- Audio Source Text -->
-                                @if(!empty($audio['source_text']))
-                                    <div class="mt-3 pt-3 border-t border-gray-200">
-                                        <span class="text-gray-500 block mb-1">Audio script (preview)</span>
-                                        <p class="text-xs text-gray-500 mb-1">
-                                            <a href="#edit-audio" class="text-blue-600 hover:underline">Edit in sidebar</a> to regenerate.
-                                        </p>
-                                        <div class="bg-white rounded p-2 text-gray-700 max-h-32 overflow-y-auto text-xs whitespace-pre-wrap">{{ $audio['source_text'] }}</div>
-                                    </div>
-                                @endif
-                            </div>
-                        @endforeach
-                    </div>
-                @else
-                    <div>
-                        <div class="flex items-center justify-between mb-2">
-                            <h4 class="text-sm font-medium text-gray-700">Audio Preview</h4>
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                                ⏳ Pending
-                            </span>
-                        </div>
-                        <p class="text-xs text-gray-500">No audio preview generated yet</p>
-                    </div>
-                @endif
-            </div>
+            </details>
         </div>
 
-        <!-- Sidebar (Right Column) -->
         <div class="space-y-6">
-            <!-- Actions -->
             <div class="bg-white rounded-lg shadow-sm p-6">
-                <h3 class="text-lg font-heading font-medium text-gray-900 mb-4">Actions</h3>
-                <div class="space-y-3">
-                    <a href="{{ route('videos.index') }}" class="block w-full text-center btn-secondary">
-                        ← Back to Library
-                    </a>
-                </div>
+                <a href="{{ route('videos.index') }}" class="block w-full text-center btn-secondary text-sm">← Back to library</a>
             </div>
 
-            <!-- Edit audio script -->
             <div class="bg-white rounded-lg shadow-sm p-6" id="edit-audio">
-                <h3 class="text-lg font-heading font-medium text-gray-900 mb-4">Edit audio script</h3>
+                <h2 class="text-lg font-heading font-medium text-gray-900 mb-4">Audio script</h2>
                 <form method="POST" action="{{ route('videos.update-audio-script', $video['id']) }}" class="space-y-3">
                     @csrf
-                    <label for="source_text" class="block text-sm font-medium text-gray-700">Script (text-to-speech)</label>
+                    <label for="source_text" class="block text-sm font-medium text-gray-700">Text-to-speech script</label>
                     <textarea
                         id="source_text"
                         name="source_text"
                         rows="10"
                         required
-                        class="w-full text-sm text-gray-900 border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500 font-sans"
+                        class="w-full text-sm text-gray-900 border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                         placeholder="Script read by ElevenLabs…"
                     >{{ old('source_text', $audioSourceText) }}</textarea>
                     <p class="text-xs text-gray-500">
-                        Saves to the pipeline DB, overwrites the MP3 on S3, and refreshes public search metadata when the video is v6-eligible.
-                        Same flow as <a href="{{ route('videos.search-visible-audio') }}" class="text-blue-600 hover:underline">Search-visible Audio</a>.
+                        Saves to the pipeline, regenerates the MP3 on S3, and refreshes search metadata when eligible.
+                        <a href="{{ route('videos.search-visible-audio') }}" class="text-blue-600 hover:underline">Bulk audio tool</a>
                     </p>
-                    <button type="submit"
-                            class="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition font-medium text-sm">
-                        Save &amp; regenerate audio
+                    <button type="submit" class="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition text-sm font-medium">
+                        Save and regenerate
                     </button>
                 </form>
             </div>
 
-            <!-- Update Thumbnail -->
             <div class="bg-white rounded-lg shadow-sm p-6">
-                <h3 class="text-lg font-heading font-medium text-gray-900 mb-4">Update Thumbnail</h3>
+                <h2 class="text-lg font-heading font-medium text-gray-900 mb-4">Thumbnail</h2>
                 <form method="POST" action="{{ route('videos.update-thumbnail', $video['id']) }}" class="space-y-3">
                     @csrf
-                    <label for="thumbnail_url" class="block text-sm font-medium text-gray-700">Thumbnail URL</label>
-                    <input 
-                        type="url" 
-                        name="thumbnail_url" 
-                        id="thumbnail_url" 
+                    <label for="thumbnail_url" class="block text-sm font-medium text-gray-700">Image URL</label>
+                    <input
+                        type="url"
+                        name="thumbnail_url"
+                        id="thumbnail_url"
                         value="{{ $video['thumbnail_url'] ?? '' }}"
-                        placeholder="https://cdn.jwplayer.com/v2/media/XXX/thumbnails/720.jpg"
+                        placeholder="https://cdn.jwplayer.com/…"
                         class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
                     >
-                    <p class="text-xs text-gray-500">Leave empty to clear. Overwritten on next WordPress sync.</p>
-                    <button type="submit" class="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition">
-                        Save Thumbnail
+                    <p class="text-xs text-gray-500">Leave empty to clear. WordPress sync may overwrite.</p>
+                    <button type="submit" class="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition text-sm">
+                        Save thumbnail
                     </button>
                 </form>
             </div>
 
-            <!-- Related Videos -->
             @if(!empty($relatedVideos) && count($relatedVideos) > 0)
                 <div class="bg-white rounded-lg shadow-sm p-6">
-                    <h3 class="text-lg font-heading font-medium text-gray-900 mb-4">Related Videos</h3>
+                    <h2 class="text-lg font-heading font-medium text-gray-900 mb-4">Related videos</h2>
                     <div class="space-y-4">
                         @foreach($relatedVideos as $related)
                             <a href="{{ route('videos.show', $related['id']) }}" class="block group">
                                 <div class="flex space-x-3">
                                     @if(!empty($related['thumbnail_url']))
-                                        <img 
-                                            src="{{ $related['thumbnail_url'] }}" 
-                                            alt="{{ $related['title'] }}"
-                                            class="w-24 h-16 object-cover rounded"
-                                        >
+                                        <img src="{{ $related['thumbnail_url'] }}" alt="{{ $related['title'] }}" class="w-20 h-14 object-cover rounded">
                                     @else
-                                        <div class="w-24 h-16 bg-gray-200 rounded flex items-center justify-center flex-shrink-0">
-                                            <svg class="h-6 w-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <div class="w-20 h-14 bg-gray-200 rounded flex items-center justify-center shrink-0">
+                                            <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
                                             </svg>
                                         </div>
                                     @endif
                                     <div class="flex-1 min-w-0">
-                                        <p class="text-sm font-medium text-gray-900 group-hover:text-blue-600 line-clamp-2">
-                                            {{ $related['title'] }}
-                                        </p>
-                                        <p class="text-xs text-gray-500 mt-1">
-                                            {{ $related['instructor'] ?? 'Unknown' }}
-                                        </p>
+                                        <p class="text-sm font-medium text-gray-900 group-hover:text-blue-600 line-clamp-2">{{ $related['title'] }}</p>
+                                        <p class="text-xs text-gray-500 mt-0.5">{{ $related['instructor'] ?? 'Unknown' }}</p>
                                     </div>
                                 </div>
                             </a>
@@ -557,5 +251,3 @@
     </div>
 </div>
 @endsection
-
-

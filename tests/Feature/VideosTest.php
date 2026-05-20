@@ -45,8 +45,9 @@ class VideosTest extends FeatureTestCase
         $this->get(route('videos.show', ['id' => 1]))
             ->assertOk()
             ->assertViewIs('videos.show')
-            ->assertSee('Edit audio script')
-            ->assertSee('Save & regenerate audio')
+            ->assertSee('Audio script')
+            ->assertSee('Save and regenerate')
+            ->assertSee('Search indexing')
             ->assertSee('Title: Test Video One. A short preview script.');
     }
 }
