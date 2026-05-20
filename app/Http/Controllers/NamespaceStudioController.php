@@ -253,6 +253,62 @@ class NamespaceStudioController extends Controller
         }
     }
 
+    public function fixUpsert(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'namespace' => 'required|string|max:128',
+            'jwp_ids' => 'nullable|array|max:50',
+            'jwp_ids.*' => 'string|max:64',
+            'video_ids' => 'nullable|array|max:50',
+            'video_ids.*' => 'integer|min:1',
+        ]);
+
+        if (empty($validated['jwp_ids']) && empty($validated['video_ids'])) {
+            return response()->json(['ok' => false, 'message' => 'jwp_ids or video_ids required'], 422);
+        }
+
+        try {
+            $api = $this->getApiService();
+            $payload = ['namespace' => $validated['namespace']];
+            if (! empty($validated['jwp_ids'])) {
+                $payload['jwp_ids'] = array_values($validated['jwp_ids']);
+            }
+            if (! empty($validated['video_ids'])) {
+                $payload['video_ids'] = array_values($validated['video_ids']);
+            }
+            $result = $api->upsertPineconeVectors($payload);
+
+            return response()->json(['ok' => true, 'result' => $result]);
+        } catch (\Exception $e) {
+            Log::warning('Namespace studio fix upsert failed', ['message' => $e->getMessage()]);
+
+            return response()->json(['ok' => false, 'message' => $e->getMessage()], 502);
+        }
+    }
+
+    public function fixDelete(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'namespace' => 'required|string|max:128',
+            'jwp_ids' => 'required|array|min:1|max:50',
+            'jwp_ids.*' => 'string|max:64',
+        ]);
+
+        try {
+            $api = $this->getApiService();
+            $result = $api->deletePineconeVectors([
+                'namespace' => $validated['namespace'],
+                'jwp_ids' => array_values($validated['jwp_ids']),
+            ]);
+
+            return response()->json(['ok' => true, 'result' => $result]);
+        } catch (\Exception $e) {
+            Log::warning('Namespace studio fix delete failed', ['message' => $e->getMessage()]);
+
+            return response()->json(['ok' => false, 'message' => $e->getMessage()], 502);
+        }
+    }
+
     /**
      * Lazy-load embedding input text for modal (per video + namespace).
      */

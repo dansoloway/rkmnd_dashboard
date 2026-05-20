@@ -158,4 +158,49 @@ class NamespaceStudioTest extends FeatureTestCase
             ->assertStatus(400)
             ->assertJsonPath('ok', false);
     }
+
+    public function test_fix_upsert_proxies_to_pipeline(): void
+    {
+        $this->actingAsTenantUser();
+
+        $this->postJson(route('videos.namespace-studio.fix-upsert'), [
+            'namespace' => 'v6_title_tags',
+            'video_ids' => [2],
+        ])
+            ->assertOk()
+            ->assertJsonPath('ok', true)
+            ->assertJsonPath('result.ok_count', 1);
+    }
+
+    public function test_fix_delete_proxies_to_pipeline(): void
+    {
+        $this->actingAsTenantUser();
+
+        $this->postJson(route('videos.namespace-studio.fix-delete'), [
+            'namespace' => 'v6_title_tags',
+            'jwp_ids' => ['orphan-vec'],
+        ])
+            ->assertOk()
+            ->assertJsonPath('ok', true)
+            ->assertJsonPath('result.deleted.0', 'orphan-vec');
+    }
+
+    public function test_namespace_studio_shows_reconcile_fix_actions(): void
+    {
+        $tenant = Tenant::factory()->create();
+        $this->actingAsTenantUser(null, $tenant);
+
+        EmbeddingReconcileSnapshot::query()->create([
+            'tenant_id' => $tenant->id,
+            'namespace' => 'v6_title_tags',
+            'payload' => \Tests\Support\BackendApiFake::reconcilePayload(),
+            'reconciled_at' => now(),
+        ]);
+
+        $this->get(route('videos.namespace-studio', ['namespace' => 'v6_title_tags']))
+            ->assertOk()
+            ->assertSee('Upsert')
+            ->assertSee('Delete')
+            ->assertSee('post_status=draft');
+    }
 }

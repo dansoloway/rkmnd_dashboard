@@ -40,6 +40,31 @@ class BackendApiFake
                 return Http::response(self::reconcilePayload());
             }
 
+            if (str_contains($path, '/api/v1/wordpress/pinecone/vectors/upsert')) {
+                return Http::response([
+                    'namespace' => 'v6_title_tags',
+                    'results' => [
+                        [
+                            'video_id' => 2,
+                            'jwp_id' => 'jwp-missing',
+                            'ok' => true,
+                            'skipped' => false,
+                            'error' => null,
+                        ],
+                    ],
+                    'ok_count' => 1,
+                    'failed_count' => 0,
+                ]);
+            }
+
+            if (str_contains($path, '/api/v1/wordpress/pinecone/vectors/delete')) {
+                return Http::response([
+                    'namespace' => 'v6_title_tags',
+                    'deleted' => ['orphan-vec'],
+                    'failed' => [],
+                ]);
+            }
+
             if (str_contains($path, '/related')) {
                 return Http::response([]);
             }
@@ -237,6 +262,7 @@ class BackendApiFake
             ],
             'missing_from_pinecone' => [
                 [
+                    'video_id' => 2,
                     'jwp_id' => 'jwp-missing',
                     'wp_post_id' => 102,
                     'title' => 'Missing From Pinecone',
@@ -246,8 +272,22 @@ class BackendApiFake
                     'tenant_id' => 1,
                 ],
             ],
-            'pinecone_not_in_db' => [],
-            'pinecone_unexpected' => [],
+            'pinecone_not_in_db' => [
+                ['jwp_id' => 'orphan-vec'],
+            ],
+            'pinecone_unexpected' => [
+                [
+                    'video_id' => 1,
+                    'jwp_id' => 'jwp-unexpected',
+                    'wp_post_id' => 100,
+                    'title' => 'Unexpected Vector',
+                    'category_for_ai' => 'MBR Class',
+                    'post_status' => 'draft',
+                    'post_type' => 'video',
+                    'tenant_id' => 1,
+                    'reason' => 'post_status=draft',
+                ],
+            ],
         ];
     }
 

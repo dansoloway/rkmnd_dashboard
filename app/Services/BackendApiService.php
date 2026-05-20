@@ -199,6 +199,64 @@ class BackendApiService
     }
 
     /**
+     * Upsert videos into a Pinecone namespace (reconcile fix).
+     *
+     * @param  array{namespace: string, jwp_ids?: list<string>, video_ids?: list<int>}  $payload
+     * @return array<string, mixed>
+     */
+    public function upsertPineconeVectors(array $payload): array
+    {
+        return $this->postJsonWithTimeout('/api/v1/wordpress/pinecone/vectors/upsert', $payload, 300);
+    }
+
+    /**
+     * Delete vectors from Pinecone by jwp_id (reconcile fix).
+     *
+     * @param  array{namespace: string, jwp_ids: list<string>}  $payload
+     * @return array<string, mixed>
+     */
+    public function deletePineconeVectors(array $payload): array
+    {
+        return $this->postJsonWithTimeout('/api/v1/wordpress/pinecone/vectors/delete', $payload, 120);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function postJsonWithTimeout(string $endpoint, array $payload, int $timeoutSeconds): array
+    {
+        try {
+            $response = Http::timeout($timeoutSeconds)
+                ->withToken($this->apiKey)
+                ->asJson()
+                ->post($this->baseUrl.$endpoint, $payload);
+
+            if ($response->successful()) {
+                $data = $response->json();
+
+                return is_array($data) ? $data : [];
+            }
+
+            $decoded = $response->json();
+            $detail = $decoded['detail'] ?? null;
+            if (is_array($detail)) {
+                $detail = json_encode($detail);
+            }
+            if (! is_string($detail) || $detail === '') {
+                $detail = $response->body();
+            }
+
+            throw new Exception('API request failed: '.$response->status().' — '.$detail);
+        } catch (Exception $e) {
+            Log::error('Backend API Exception (POST JSON)', [
+                'endpoint' => $endpoint,
+                'message' => $e->getMessage(),
+            ]);
+            throw $e;
+        }
+    }
+
+    /**
      * Get single video details by ID
      * Cache: 5 minutes
      */

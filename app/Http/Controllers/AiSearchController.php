@@ -29,8 +29,6 @@ class AiSearchController extends Controller
             'selectedNamespace' => old('namespace', $defaultNamespace),
             'prefill' => [
                 'query' => old('query', ''),
-                'video_length' => old('video_length', ''),
-                'post_type' => old('post_type', ''),
             ],
             'namespaceLoadNote' => $namespaceLoadNote,
             'videos' => [],
@@ -54,8 +52,6 @@ class AiSearchController extends Controller
                 },
             ],
             'namespace' => 'nullable|string|max:128',
-            'video_length' => 'nullable|in:short,medium,long',
-            'post_type' => 'nullable|string|max:64',
         ]);
 
         $api = $this->getApiService();
@@ -74,12 +70,6 @@ class AiSearchController extends Controller
             $selectedNamespace = ($ns !== '' ? $ns : $defaultNamespace);
             if ($ns !== '') {
                 $payload['namespace'] = $ns;
-            }
-            if (! empty($validated['video_length'])) {
-                $payload['video_length'] = $validated['video_length'];
-            }
-            if (! empty($validated['post_type'])) {
-                $payload['post_type'] = $validated['post_type'];
             }
 
             $searchResponse = $api->semanticSearchVideos($payload);
@@ -101,8 +91,6 @@ class AiSearchController extends Controller
             'selectedNamespace' => $selectedNamespace,
             'prefill' => [
                 'query' => trim($validated['query']),
-                'video_length' => $validated['video_length'] ?? '',
-                'post_type' => $validated['post_type'] ?? '',
             ],
             'namespaceLoadNote' => $namespaceLoadNote,
             'videos' => is_array($videos) ? $videos : [],

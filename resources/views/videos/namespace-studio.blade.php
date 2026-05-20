@@ -4,6 +4,8 @@
 @php
     $namespaceStudioBoot = [
         'reconcileUrl' => route('videos.namespace-studio.reconcile'),
+        'fixUpsertUrl' => route('videos.namespace-studio.fix-upsert'),
+        'fixDeleteUrl' => route('videos.namespace-studio.fix-delete'),
         'embeddingTextBase' => url('/videos'),
         'selectedNamespace' => $selectedNamespace,
         'viewMode' => $viewMode,
@@ -326,6 +328,8 @@ function namespaceStudio(cfg) {
 
     return {
         reconcileUrl: cfg.reconcileUrl,
+        fixUpsertUrl: cfg.fixUpsertUrl,
+        fixDeleteUrl: cfg.fixDeleteUrl,
         embeddingTextBase: cfg.embeddingTextBase,
         selectedNamespace: cfg.selectedNamespace,
         viewMode: cfg.viewMode,
@@ -343,6 +347,9 @@ function namespaceStudio(cfg) {
         modalText: '',
         modalTitle: '',
         modalError: null,
+        fixBusy: false,
+        fixMessage: null,
+        fixMessageOk: null,
 
         init() {
             this.hydrateFromSavedSnapshot();
@@ -450,14 +457,15 @@ function namespaceStudio(cfg) {
             const videoBase = @json(url('/videos'));
             const rows = [];
             let k = 0;
-            const add = (bucket, issueLabel, r, pipelineId) => {
+            const add = (bucket, issueLabel, r) => {
                 k++;
                 const jwp_id = r.jwp_id || '';
                 const title = r.title || '';
+                const videoId = r.video_id || null;
                 let openUrl = dbUrl + '?search=' + encodeURIComponent(title || jwp_id || '');
                 let openLabel = 'Search in Metadata';
-                if (pipelineId) {
-                    openUrl = videoBase + '/' + pipelineId;
+                if (videoId) {
+                    openUrl = videoBase + '/' + videoId;
                     openLabel = 'Open video';
                 }
                 rows.push({
@@ -465,6 +473,7 @@ function namespaceStudio(cfg) {
                     bucket,
                     issueLabel,
                     jwp_id,
+                    video_id: videoId,
                     wp_post_id: r.wp_post_id || null,
                     title,
                     category_for_ai: r.category_for_ai || '',
@@ -473,17 +482,18 @@ function namespaceStudio(cfg) {
                     reason: r.reason || '',
                     openUrl,
                     openLabel,
+                    fixStatus: null,
                 });
             };
 
             (payload.missing_from_pinecone || []).forEach(r => {
-                add('missing_from_pinecone', 'Missing from Pinecone', r, null);
+                add('missing_from_pinecone', 'Missing from Pinecone', r);
             });
             (payload.pinecone_not_in_db || []).forEach(r => {
-                add('pinecone_not_in_db', 'Pinecone not in DB', r, null);
+                add('pinecone_not_in_db', 'Pinecone not in DB', r);
             });
             (payload.pinecone_unexpected || []).forEach(r => {
-                add('unexpected_in_index', 'Unexpected in index', r, null);
+                add('unexpected_in_index', 'Unexpected in index', r);
             });
             this.issuesRows = rows;
         },
@@ -510,6 +520,186 @@ function namespaceStudio(cfg) {
                 this.modalError = e.message || String(e);
             } finally {
                 this.modalLoading = false;
+            }
+        },
+
+        async fixUpsert(row) {
+            if (!row || this.fixBusy) {
+                return;
+            }
+            this.fixBusy = true;
+            this.fixMessage = null;
+            row.fixStatus = 'working';
+            const body = { namespace: this.selectedNamespace };
+            if (row.video_id) {
+                body.video_ids = [row.video_id];
+            } else if (row.jwp_id) {
+                body.jwp_ids = [row.jwp_id];
+            } else {
+                row.fixStatus = 'error';
+                this.fixMessage = 'No jwp_id or video_id';
+                this.fixBusy = false;
+                return;
+            }
+            try {
+                const res = await fetch(this.fixUpsertUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrf,
+                    },
+                    body: JSON.stringify(body),
+                });
+                const data = await res.json();
+                if (!data.ok) {
+                    throw new Error(data.message || 'Upsert failed');
+                }
+                const item = (data.result?.results || [])[0];
+                if (item && !item.ok) {
+                    throw new Error(item.error || 'Upsert failed');
+                }
+                row.fixStatus = 'ok';
+                this.fixMessage = 'Upserted ' + (row.jwp_id || row.video_id);
+                this.fixMessageOk = true;
+                await this.runReconcile();
+            } catch (e) {
+                row.fixStatus = 'error';
+                this.fixMessage = e.message || String(e);
+                this.fixMessageOk = false;
+            } finally {
+                this.fixBusy = false;
+            }
+        },
+
+        async fixDelete(row) {
+            if (!row || !row.jwp_id || this.fixBusy) {
+                return;
+            }
+            if (!confirm('Remove vector ' + row.jwp_id + ' from Pinecone namespace ' + this.selectedNamespace + '?')) {
+                return;
+            }
+            this.fixBusy = true;
+            this.fixMessage = null;
+            row.fixStatus = 'working';
+            try {
+                const res = await fetch(this.fixDeleteUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrf,
+                    },
+                    body: JSON.stringify({
+                        namespace: this.selectedNamespace,
+                        jwp_ids: [row.jwp_id],
+                    }),
+                });
+                const data = await res.json();
+                if (!data.ok) {
+                    throw new Error(data.message || 'Delete failed');
+                }
+                row.fixStatus = 'ok';
+                this.fixMessage = 'Deleted ' + row.jwp_id;
+                this.fixMessageOk = true;
+                await this.runReconcile();
+            } catch (e) {
+                row.fixStatus = 'error';
+                this.fixMessage = e.message || String(e);
+                this.fixMessageOk = false;
+            } finally {
+                this.fixBusy = false;
+            }
+        },
+
+        async fixBulkUpsert() {
+            const rows = this.filteredIssuesRows().filter((r) => r.bucket === 'missing_from_pinecone');
+            if (rows.length === 0) {
+                return;
+            }
+            if (!confirm('Upsert ' + rows.length + ' missing video(s) into Pinecone namespace ' + this.selectedNamespace + '?')) {
+                return;
+            }
+            this.fixBusy = true;
+            this.fixMessage = null;
+            const videoIds = rows.map((r) => r.video_id).filter((id) => id).slice(0, 50);
+            const jwpIds = rows.filter((r) => !r.video_id).map((r) => r.jwp_id).filter((j) => j).slice(0, 50);
+            const body = { namespace: this.selectedNamespace };
+            if (videoIds.length) {
+                body.video_ids = videoIds;
+            }
+            if (jwpIds.length) {
+                body.jwp_ids = jwpIds;
+            }
+            try {
+                const res = await fetch(this.fixUpsertUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrf,
+                    },
+                    body: JSON.stringify(body),
+                });
+                const data = await res.json();
+                if (!data.ok) {
+                    throw new Error(data.message || 'Bulk upsert failed');
+                }
+                const ok = data.result?.ok_count ?? 0;
+                const failed = data.result?.failed_count ?? 0;
+                this.fixMessage = 'Bulk upsert: ' + ok + ' ok, ' + failed + ' failed';
+                this.fixMessageOk = failed === 0;
+                await this.runReconcile();
+            } catch (e) {
+                this.fixMessage = e.message || String(e);
+                this.fixMessageOk = false;
+            } finally {
+                this.fixBusy = false;
+            }
+        },
+
+        async fixBulkDelete() {
+            const bucket = this.issuesBucketFilter;
+            if (bucket !== 'pinecone_not_in_db' && bucket !== 'unexpected_in_index') {
+                return;
+            }
+            const rows = this.filteredIssuesRows().filter((r) => r.jwp_id);
+            if (rows.length === 0) {
+                return;
+            }
+            if (!confirm('Delete ' + rows.length + ' vector(s) from Pinecone namespace ' + this.selectedNamespace + '?')) {
+                return;
+            }
+            this.fixBusy = true;
+            this.fixMessage = null;
+            const jwpIds = rows.map((r) => r.jwp_id).slice(0, 50);
+            try {
+                const res = await fetch(this.fixDeleteUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': csrf,
+                    },
+                    body: JSON.stringify({
+                        namespace: this.selectedNamespace,
+                        jwp_ids: jwpIds,
+                    }),
+                });
+                const data = await res.json();
+                if (!data.ok) {
+                    throw new Error(data.message || 'Bulk delete failed');
+                }
+                const deleted = (data.result?.deleted || []).length;
+                const failed = (data.result?.failed || []).length;
+                this.fixMessage = 'Bulk delete: ' + deleted + ' removed, ' + failed + ' failed';
+                this.fixMessageOk = failed === 0;
+                await this.runReconcile();
+            } catch (e) {
+                this.fixMessage = e.message || String(e);
+                this.fixMessageOk = false;
+            } finally {
+                this.fixBusy = false;
             }
         },
     };

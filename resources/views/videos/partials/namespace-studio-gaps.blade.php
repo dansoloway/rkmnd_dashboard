@@ -3,11 +3,19 @@
     <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3 mb-4">
         <div>
             <h2 class="text-lg font-semibold text-gray-900">Reconcile gaps</h2>
-            <p class="text-sm text-gray-600 mt-1">Problem rows only — not the full namespace catalog. From the last saved reconcile for this namespace.</p>
+            <p class="text-sm text-gray-600 mt-1">
+                Problem rows for namespace <code class="bg-gray-100 px-1 rounded text-xs">{{ $selectedNamespace }}</code>.
+                <strong>Unexpected</strong> = vector is in Pinecone and DB, but the video fails the reconcile filter (status, type, category, or tenant) — usually delete the stale vector.
+            </p>
         </div>
         <a href="{{ route('videos.embeddings-reconcile', ['namespace' => $selectedNamespace, 'run' => 1]) }}"
            class="text-sm text-blue-600 hover:text-blue-800 whitespace-nowrap">Full reconcile page →</a>
     </div>
+
+    <div x-show="fixMessage"
+         class="mb-4 text-sm px-3 py-2 rounded border"
+         x-bind:class="fixMessageOk ? 'bg-green-50 border-green-200 text-green-900' : 'bg-red-50 border-red-200 text-red-900'"
+         x-text="fixMessage"></div>
 
     <div x-show="!reconcileSummary && !reconcileLoading && issuesRows.length === 0"
          class="text-sm text-gray-500 py-6 text-center border border-dashed border-gray-200 rounded-lg">
@@ -26,7 +34,7 @@
                 <span x-show="reconcileSummary?.pinecone_unexpected_truncated"> Unexpected list truncated.</span>
             </p>
 
-            <div class="flex flex-wrap gap-2 mb-4" role="tablist">
+            <div class="flex flex-wrap gap-2 mb-3" role="tablist">
                 <button type="button"
                         x-on:click="issuesBucketFilter = 'all'"
                         x-bind:class="issuesBucketFilter === 'all' ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'"
@@ -57,6 +65,23 @@
                 </button>
             </div>
 
+            <div class="flex flex-wrap gap-2 mb-4" x-show="filteredIssuesRows().length > 0">
+                <button type="button"
+                        x-show="issuesBucketFilter === 'missing_from_pinecone'"
+                        x-on:click="fixBulkUpsert()"
+                        x-bind:disabled="fixBusy || reconcileLoading"
+                        class="px-3 py-1.5 text-sm font-medium rounded-md bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-50">
+                    Upsert all shown (missing)
+                </button>
+                <button type="button"
+                        x-show="issuesBucketFilter === 'pinecone_not_in_db' || issuesBucketFilter === 'unexpected_in_index'"
+                        x-on:click="fixBulkDelete()"
+                        x-bind:disabled="fixBusy || reconcileLoading"
+                        class="px-3 py-1.5 text-sm font-medium rounded-md bg-red-600 text-white hover:bg-red-700 disabled:opacity-50">
+                    Delete all shown
+                </button>
+            </div>
+
             <div x-show="filteredIssuesRows().length === 0"
                  class="text-sm text-gray-500 py-8 text-center border border-gray-100 rounded-lg">
                 <span x-show="gapBucketCounts().all === 0">No gap rows for this namespace — catalog and Pinecone align.</span>
@@ -71,7 +96,7 @@
                         <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">jwp_id</th>
                         <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Title / WP</th>
                         <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">category_for_ai</th>
-                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Open</th>
+                        <th class="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
                     </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-200 bg-white">
@@ -79,13 +104,30 @@
                         <tr class="hover:bg-gray-50">
                             <td class="px-3 py-2 text-sm whitespace-nowrap" x-text="row.issueLabel"></td>
                             <td class="px-3 py-2 text-xs font-mono text-gray-900" x-text="row.jwp_id || '—'"></td>
-                            <td class="px-3 py-2 text-sm">
+                            <td class="px-3 py-2 text-sm max-w-xs">
                                 <span x-text="row.title || '—'"></span>
                                 <span class="block text-xs text-gray-500" x-show="row.wp_post_id" x-text="'WP #' + row.wp_post_id"></span>
+                                <span class="block text-xs text-purple-700 mt-0.5" x-show="row.reason" x-text="row.reason"></span>
                             </td>
                             <td class="px-3 py-2 text-sm text-gray-700" x-text="row.category_for_ai || '—'"></td>
-                            <td class="px-3 py-2 text-sm whitespace-nowrap">
+                            <td class="px-3 py-2 text-sm whitespace-nowrap space-x-2">
+                                <button type="button"
+                                        x-show="row.bucket === 'missing_from_pinecone'"
+                                        x-on:click="fixUpsert(row)"
+                                        x-bind:disabled="fixBusy || reconcileLoading"
+                                        class="text-amber-800 font-medium hover:underline disabled:opacity-50">
+                                    Upsert
+                                </button>
+                                <button type="button"
+                                        x-show="row.bucket === 'pinecone_not_in_db' || row.bucket === 'unexpected_in_index'"
+                                        x-on:click="fixDelete(row)"
+                                        x-bind:disabled="fixBusy || reconcileLoading || !row.jwp_id"
+                                        class="text-red-700 font-medium hover:underline disabled:opacity-50">
+                                    Delete
+                                </button>
                                 <a :href="row.openUrl" class="text-blue-600 hover:text-blue-800" x-text="row.openLabel"></a>
+                                <span x-show="row.fixStatus === 'ok'" class="text-green-600 text-xs">✓</span>
+                                <span x-show="row.fixStatus === 'error'" class="text-red-600 text-xs">✗</span>
                             </td>
                         </tr>
                     </template>
@@ -99,8 +141,21 @@
                         <div class="font-medium text-gray-900" x-text="row.issueLabel"></div>
                         <div class="font-mono text-xs text-gray-600 mt-1" x-text="row.jwp_id || '—'"></div>
                         <div class="mt-1" x-text="row.title || '—'"></div>
+                        <p class="text-xs text-purple-700 mt-1" x-show="row.reason" x-text="row.reason"></p>
                         <div class="text-xs text-gray-500 mt-1" x-show="row.category_for_ai" x-text="row.category_for_ai"></div>
-                        <a :href="row.openUrl" class="inline-block mt-2 text-blue-600" x-text="row.openLabel"></a>
+                        <div class="flex flex-wrap gap-3 mt-2">
+                            <button type="button"
+                                    x-show="row.bucket === 'missing_from_pinecone'"
+                                    x-on:click="fixUpsert(row)"
+                                    x-bind:disabled="fixBusy"
+                                    class="text-amber-800 font-medium">Upsert</button>
+                            <button type="button"
+                                    x-show="row.bucket === 'pinecone_not_in_db' || row.bucket === 'unexpected_in_index'"
+                                    x-on:click="fixDelete(row)"
+                                    x-bind:disabled="fixBusy || !row.jwp_id"
+                                    class="text-red-700 font-medium">Delete</button>
+                            <a :href="row.openUrl" class="text-blue-600" x-text="row.openLabel"></a>
+                        </div>
                     </div>
                 </template>
             </div>

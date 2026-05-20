@@ -2,7 +2,7 @@
 
 @section('content')
 @php
-    $prefill = $prefill ?? ['query' => '', 'video_length' => '', 'post_type' => ''];
+    $prefill = $prefill ?? ['query' => ''];
 @endphp
 
 <div class="space-y-6 max-w-5xl mx-auto">
@@ -44,42 +44,15 @@
                 </p>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                    <label for="video_length" class="block text-sm font-medium text-gray-700 mb-1">Video length (optional)</label>
-                    <select
-                        id="video_length"
-                        name="video_length"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    >
-                        <option value="">—</option>
-                        @foreach(['short','medium','long'] as $len)
-                            <option value="{{ $len }}" @selected(($prefill['video_length'] ?? '') === $len)>{{ $len }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="md:col-span-2">
-                    <label for="post_type" class="block text-sm font-medium text-gray-700 mb-1">Post type filter (optional)</label>
-                    <input
-                        type="text"
-                        id="post_type"
-                        name="post_type"
-                        value="{{ $prefill['post_type'] ?? '' }}"
-                        placeholder="e.g. video, scheduled"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    >
-                </div>
-            </div>
-
             <div>
-                <label for="query" class="block text-sm font-medium text-gray-700 mb-1">Query</label>
+                <label for="query" class="sr-only">Search</label>
                 <textarea
                     id="query"
                     name="query"
-                    rows="4"
+                    rows="2"
                     required
                     placeholder="What are you looking for?"
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 font-mono text-sm"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm"
                 >{{ $prefill['query'] ?? '' }}</textarea>
             </div>
 
