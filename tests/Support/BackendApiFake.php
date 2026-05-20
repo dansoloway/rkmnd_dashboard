@@ -113,6 +113,21 @@ class BackendApiFake
                 return Http::response(self::searchPayload());
             }
 
+            if (str_contains($path, '/api/v1/tenant/search-feedback/analytics')) {
+                $namespace = null;
+                $url = $request->url();
+                $queryString = parse_url($url, PHP_URL_QUERY);
+                if (is_string($queryString) && $queryString !== '') {
+                    parse_str($queryString, $qs);
+                    $raw = $qs['namespace'] ?? null;
+                    if (is_string($raw) && trim($raw) !== '') {
+                        $namespace = trim($raw);
+                    }
+                }
+
+                return Http::response(self::searchFeedbackAnalyticsPayload($namespace));
+            }
+
             if (str_contains($path, '/api/v1/tenant/search-feedback')) {
                 return Http::response(self::searchFeedbackPayload());
             }
@@ -340,6 +355,7 @@ class BackendApiFake
                         [
                             'title' => 'Hip Mobility Flow',
                             'wp_post_id' => 5001,
+                            'video_id' => 81,
                             'score' => 0.91,
                         ],
                     ],
@@ -347,6 +363,71 @@ class BackendApiFake
             ],
             'count' => 1,
             'days' => 7,
+        ];
+    }
+
+    public static function searchFeedbackAnalyticsPayload(?string $namespace = null): array
+    {
+        $detail = self::searchFeedbackPayload()['feedback'];
+        $detail[0]['video_title'] = 'Hip Mobility Flow';
+        $detail[0]['search_created_at'] = now()->subHours(3)->toIso8601String();
+
+        if ($namespace !== null && $namespace !== '') {
+            $detail = array_values(array_filter(
+                $detail,
+                fn (array $row) => ($row['namespace'] ?? '') === $namespace
+            ));
+        }
+
+        return [
+            'days' => 30,
+            'namespace' => $namespace !== null && $namespace !== '' ? $namespace : null,
+            'summary' => [
+                'up' => 1,
+                'down' => 1,
+                'total' => 2,
+                'video_ratings' => 1,
+                'query_level_ratings' => 1,
+                'distinct_queries' => 2,
+                'distinct_videos' => 1,
+            ],
+            'by_query' => [
+                [
+                    'query' => 'hip mobility for runners',
+                    'namespace' => 'v6_title_tags',
+                    'up' => 1,
+                    'down' => 0,
+                    'total' => 1,
+                    'last_rated_at' => now()->subHours(2)->toIso8601String(),
+                    'whole_search_votes' => [],
+                    'video_ratings' => [$detail[0]],
+                ],
+                [
+                    'query' => 'shoulder pain relief',
+                    'namespace' => 'v6_title_tags',
+                    'up' => 0,
+                    'down' => 1,
+                    'total' => 1,
+                    'last_rated_at' => now()->subDay()->toIso8601String(),
+                    'whole_search_votes' => [
+                        ['vote' => -1, 'search_id' => 'test-search-session-002', 'updated_at' => now()->subDay()->toIso8601String()],
+                    ],
+                    'video_ratings' => [],
+                ],
+            ],
+            'by_video' => [
+                [
+                    'wp_post_id' => 5001,
+                    'video_id' => 81,
+                    'video_title' => 'Hip Mobility Flow',
+                    'up' => 1,
+                    'down' => 0,
+                    'total' => 1,
+                    'last_rated_at' => now()->subHours(2)->toIso8601String(),
+                    'query_ratings' => [$detail[0]],
+                ],
+            ],
+            'detail' => $detail,
         ];
     }
 
@@ -360,10 +441,12 @@ class BackendApiFake
                     'query' => 'hip mobility for runners',
                     'namespace' => 'v6_title_tags',
                     'wp_post_id' => 5001,
+                    'video_id' => 81,
                     'rank' => 1,
                     'pinecone_score' => 0.9123,
                     'vote' => 1,
                     'source' => 'dashboard',
+                    'search_created_at' => now()->subHours(3)->toIso8601String(),
                     'updated_at' => now()->subHours(2)->toIso8601String(),
                 ],
                 [
@@ -395,6 +478,7 @@ class BackendApiFake
                     'metadata' => [
                         'title' => 'Hip Mobility Flow',
                         'wp_post_id' => 5001,
+                        'video_id' => 81,
                         'slug' => 'hip-mobility-flow',
                         'instructor' => 'Jane Doe',
                     ],

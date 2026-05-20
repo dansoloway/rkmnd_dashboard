@@ -23,11 +23,17 @@
                 $meta = isset($row['metadata']) && is_array($row['metadata']) ? $row['metadata'] : [];
                 $score = $row['score'] ?? $row['_score'] ?? $row['similarity'] ?? null;
                 $wpPostId = isset($meta['wp_post_id']) && is_numeric($meta['wp_post_id']) ? (int) $meta['wp_post_id'] : null;
+                $videoId = null;
+                if (isset($row['video_id']) && is_numeric($row['video_id'])) {
+                    $videoId = (int) $row['video_id'];
+                } elseif (isset($meta['video_id']) && is_numeric($meta['video_id'])) {
+                    $videoId = (int) $meta['video_id'];
+                }
                 $numericScore = ($score !== null && is_numeric($score)) ? (float) $score : null;
             @endphp
             <li class="py-3 px-3 flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
                 <div class="min-w-0 flex-1 text-sm">
-                    <span class="font-medium text-gray-900">{{ $meta['title'] ?? '(No title)' }}</span>
+                    @include('partials.video-title-link', ['title' => $meta['title'] ?? '(No title)', 'videoId' => $videoId])
                     <span class="text-gray-500 ml-2">#{{ $idx + 1 }}</span>
                     @if($wpPostId)
                         <span class="text-gray-400 text-xs ml-1">WP {{ $wpPostId }}</span>
@@ -38,13 +44,13 @@
                 </div>
                 <div class="flex items-center gap-1 shrink-0">
                     <button type="button"
-                        @click="submit(1, {{ $wpPostId ?? 'null' }}, {{ $idx + 1 }}, @js($numericScore))"
+                        @click.stop="submit(1, {{ $wpPostId ?? 'null' }}, {{ $idx + 1 }}, @js($numericScore))"
                         :disabled="busy"
                         class="px-2 py-1 rounded border text-sm"
                         :class="voteFor({{ $wpPostId ?? 'null' }}) === 1 ? 'bg-green-100 border-green-400 text-green-800' : 'border-gray-300 hover:bg-gray-50'"
                         title="Good match">👍</button>
                     <button type="button"
-                        @click="submit(-1, {{ $wpPostId ?? 'null' }}, {{ $idx + 1 }}, @js($numericScore))"
+                        @click.stop="submit(-1, {{ $wpPostId ?? 'null' }}, {{ $idx + 1 }}, @js($numericScore))"
                         :disabled="busy"
                         class="px-2 py-1 rounded border text-sm"
                         :class="voteFor({{ $wpPostId ?? 'null' }}) === -1 ? 'bg-red-100 border-red-400 text-red-800' : 'border-gray-300 hover:bg-gray-50'"

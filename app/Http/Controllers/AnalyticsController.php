@@ -46,6 +46,8 @@ class AnalyticsController extends Controller
             ],
             'namespace' => 'nullable|string|max:128',
             'feedback_days' => 'nullable|integer|in:7,30,90',
+            'feedback_tab' => 'nullable|string|in:overview,by_query,by_video,detail',
+            'feedback_namespace' => 'nullable|string|max:128',
         ]);
 
         $api = $this->getApiService();
@@ -80,6 +82,12 @@ class AnalyticsController extends Controller
 
         if (isset($validated['feedback_days'])) {
             $request->merge(['feedback_days' => $validated['feedback_days']]);
+        }
+        if (isset($validated['feedback_tab'])) {
+            $request->merge(['feedback_tab' => $validated['feedback_tab']]);
+        }
+        if (array_key_exists('feedback_namespace', $validated)) {
+            $request->merge(['feedback_namespace' => $validated['feedback_namespace']]);
         }
 
         return $this->renderAnalytics($request, $extra);
@@ -150,16 +158,38 @@ class AnalyticsController extends Controller
         [$namespaces, $defaultNamespace, $namespaceLoadNote] = $this->resolveNamespacesMeta($api);
 
         $feedbackDays = $this->resolveFeedbackDays($request);
+        $feedbackTab = $this->resolveFeedbackTab($request);
+        $feedbackNamespace = $this->resolveFeedbackNamespace($request);
         $searchFeedback = [];
         $searchFeedbackError = null;
+        $feedbackAnalytics = null;
+        $feedbackAnalyticsError = null;
         try {
-            $feedbackResponse = $api->getSearchFeedback(200, $feedbackDays);
-            $searchFeedback = is_array($feedbackResponse['feedback'] ?? null)
-                ? $feedbackResponse['feedback']
+            $feedbackAnalytics = $api->getSearchFeedbackAnalytics($feedbackDays, $feedbackNamespace);
+            $searchFeedback = is_array($feedbackAnalytics['detail'] ?? null)
+                ? $feedbackAnalytics['detail']
                 : [];
         } catch (\Exception $e) {
-            Log::warning('Search feedback endpoint failed', ['error' => $e->getMessage()]);
-            $searchFeedbackError = $e->getMessage();
+            Log::warning('Search feedback analytics failed', ['error' => $e->getMessage()]);
+            $feedbackAnalyticsError = $e->getMessage();
+            try {
+                $feedbackResponse = $api->getSearchFeedback(200, $feedbackDays);
+                $searchFeedback = is_array($feedbackResponse['feedback'] ?? null)
+                    ? $feedbackResponse['feedback']
+                    : [];
+            } catch (\Exception $e2) {
+                $searchFeedbackError = $e2->getMessage();
+            }
+        }
+
+        $summary = is_array($feedbackAnalytics['summary'] ?? null)
+            ? $feedbackAnalytics['summary']
+            : $this->summarizeFeedback($searchFeedback);
+        if (! isset($summary['video_ratings'])) {
+            $summary = array_merge(
+                ['video_ratings' => 0, 'query_level_ratings' => 0, 'distinct_queries' => 0, 'distinct_videos' => 0],
+                $summary
+            );
         }
 
         return [
@@ -170,8 +200,12 @@ class AnalyticsController extends Controller
             'recentQueries' => is_array($recentQueries) ? $recentQueries : [],
             'searchFeedback' => $searchFeedback,
             'searchFeedbackError' => $searchFeedbackError,
+            'feedbackAnalytics' => $feedbackAnalytics,
+            'feedbackAnalyticsError' => $feedbackAnalyticsError,
+            'feedbackTab' => $feedbackTab,
             'feedbackDays' => $feedbackDays,
-            'feedbackSummary' => $this->summarizeFeedback($searchFeedback),
+            'feedbackNamespace' => $feedbackNamespace,
+            'feedbackSummary' => $summary,
             'namespaces' => $namespaces,
             'defaultNamespace' => $defaultNamespace,
             'namespaceLoadNote' => $namespaceLoadNote,
@@ -199,6 +233,24 @@ class AnalyticsController extends Controller
         $days = (int) $request->query('feedback_days', $request->input('feedback_days', 30));
 
         return in_array($days, [7, 30, 90], true) ? $days : 30;
+    }
+
+    private function resolveFeedbackTab(Request $request): string
+    {
+        $tab = (string) $request->query('feedback_tab', $request->input('feedback_tab', 'overview'));
+
+        return in_array($tab, ['overview', 'by_query', 'by_video', 'detail'], true) ? $tab : 'overview';
+    }
+
+    private function resolveFeedbackNamespace(Request $request): ?string
+    {
+        $raw = $request->query('feedback_namespace', $request->input('feedback_namespace'));
+        if ($raw === null) {
+            return null;
+        }
+        $ns = trim((string) $raw);
+
+        return $ns !== '' ? $ns : null;
     }
 
     /**

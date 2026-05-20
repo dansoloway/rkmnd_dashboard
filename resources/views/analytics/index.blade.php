@@ -211,12 +211,8 @@
                                         <span class="block text-xs text-gray-400 font-mono">{{ $item['namespace'] }}</span>
                                     @endif
                                 </td>
-                                <td class="px-4 py-3 text-sm text-gray-500 whitespace-nowrap">
-                                    @if(!empty($item['timestamp']))
-                                        {{ \Carbon\Carbon::parse($item['timestamp'])->diffForHumans() }}
-                                    @else
-                                        —
-                                    @endif
+                                <td class="px-4 py-3 text-sm whitespace-nowrap">
+                                    @include('partials.analytics-datetime', ['isoTimestamp' => $item['timestamp'] ?? null])
                                 </td>
                                 <td class="px-4 py-3 text-sm text-gray-500">{{ $item['result_count'] ?? '-' }}</td>
                                 <td class="px-4 py-3 text-sm text-gray-600">
@@ -225,18 +221,19 @@
                                             @foreach($top6 as $idx => $r)
                                                 @php
                                                     $wpId = isset($r['wp_post_id']) && is_numeric($r['wp_post_id']) ? (int) $r['wp_post_id'] : null;
+                                                    $rVideoId = isset($r['video_id']) && is_numeric($r['video_id']) ? (int) $r['video_id'] : null;
                                                     $rScore = isset($r['score']) && is_numeric($r['score']) ? (float) $r['score'] : null;
                                                 @endphp
                                                 <li class="flex items-start justify-between gap-2">
                                                     <span class="min-w-0">
-                                                        <span class="font-medium">{{ e($r['title'] ?? '-') }}</span>
+                                                        @include('partials.video-title-link', ['title' => $r['title'] ?? '-', 'videoId' => $rVideoId])
                                                         @if($rScore !== null)
                                                             <span class="text-blue-600 font-mono text-xs ml-1">{{ number_format($rScore * 100, 1) }}%</span>
                                                         @endif
                                                     </span>
                                                     <span class="flex gap-0.5 shrink-0">
-                                                        <button type="button" @click="submit(1, {{ $wpId ?? 'null' }}, {{ $idx + 1 }}, @js($rScore))" :disabled="busy" class="px-1.5 py-0.5 rounded border text-xs" :class="voteFor({{ $wpId ?? 'null' }}) === 1 ? 'bg-green-100 border-green-400' : 'border-gray-200'">👍</button>
-                                                        <button type="button" @click="submit(-1, {{ $wpId ?? 'null' }}, {{ $idx + 1 }}, @js($rScore))" :disabled="busy" class="px-1.5 py-0.5 rounded border text-xs" :class="voteFor({{ $wpId ?? 'null' }}) === -1 ? 'bg-red-100 border-red-400' : 'border-gray-200'">👎</button>
+                                                        <button type="button" @click.stop="submit(1, {{ $wpId ?? 'null' }}, {{ $idx + 1 }}, @js($rScore))" :disabled="busy" class="px-1.5 py-0.5 rounded border text-xs" :class="voteFor({{ $wpId ?? 'null' }}) === 1 ? 'bg-green-100 border-green-400' : 'border-gray-200'">👍</button>
+                                                        <button type="button" @click.stop="submit(-1, {{ $wpId ?? 'null' }}, {{ $idx + 1 }}, @js($rScore))" :disabled="busy" class="px-1.5 py-0.5 rounded border text-xs" :class="voteFor({{ $wpId ?? 'null' }}) === -1 ? 'bg-red-100 border-red-400' : 'border-gray-200'">👎</button>
                                                     </span>
                                                 </li>
                                             @endforeach
@@ -255,7 +252,12 @@
                                     @elseif(!empty($top6))
                                         <ol class="list-decimal list-inside space-y-0.5 text-gray-500">
                                             @foreach($top6 as $r)
-                                                <li>{{ e($r['title'] ?? '-') }}</li>
+                                                @php
+                                                    $legacyVideoId = isset($r['video_id']) && is_numeric($r['video_id']) ? (int) $r['video_id'] : null;
+                                                @endphp
+                                                <li>
+                                                    @include('partials.video-title-link', ['title' => $r['title'] ?? '-', 'videoId' => $legacyVideoId])
+                                                </li>
                                             @endforeach
                                         </ol>
                                         <p class="text-xs text-gray-400 mt-1">No session id — cannot save feedback for this row.</p>

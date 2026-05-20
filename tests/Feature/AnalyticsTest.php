@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use Tests\Support\BackendApiFake;
+
 class AnalyticsTest extends FeatureTestCase
 {
     public function test_analytics_page_shows_search_feedback_history(): void
@@ -13,7 +15,7 @@ class AnalyticsTest extends FeatureTestCase
             ->assertViewIs('analytics.index')
             ->assertSee('Search feedback')
             ->assertSee('hip mobility for runners')
-            ->assertSee('Whole search')
+            ->assertSee('Whole search', false)
             ->assertSee('Thumbs up')
             ->assertSee('Thumbs down');
     }
@@ -44,6 +46,7 @@ class AnalyticsTest extends FeatureTestCase
         ])
             ->assertOk()
             ->assertSee('Hip Mobility Flow')
+            ->assertSee(route('videos.show', 81), false)
             ->assertSee('test-search-session-001', false);
     }
 
@@ -51,9 +54,49 @@ class AnalyticsTest extends FeatureTestCase
     {
         $this->actingAsTenantUser();
 
+        $expectedTime = \Carbon\Carbon::parse(
+            BackendApiFake::recentQueriesPayload()['queries'][0]['timestamp']
+        )
+            ->timezone(config('app.timezone'))
+            ->format('M j, Y g:i A');
+
         $this->get(route('analytics.index'))
             ->assertOk()
             ->assertSee('shoulder pain')
-            ->assertSee('Whole search');
+            ->assertSee('Whole search', false)
+            ->assertSee($expectedTime, false)
+            ->assertSee(route('videos.show', 81), false);
+    }
+
+    public function test_analytics_feedback_manager_views(): void
+    {
+        $this->actingAsTenantUser();
+
+        $this->get(route('analytics.index'))
+            ->assertOk()
+            ->assertSee('By search query')
+            ->assertSee('hip mobility for runners')
+            ->assertSee('Distinct queries')
+            ->assertSee('All namespaces');
+
+        $this->get(route('analytics.index', ['feedback_tab' => 'detail']))
+            ->assertOk()
+            ->assertSee(route('videos.show', 81), false)
+            ->assertSee('Hip Mobility Flow');
+    }
+
+    public function test_analytics_feedback_namespace_filter(): void
+    {
+        $this->actingAsTenantUser();
+
+        $this->get(route('analytics.index', [
+            'feedback_namespace' => 'v6_title_tags',
+            'feedback_tab' => 'overview',
+            'feedback_days' => 30,
+        ]))
+            ->assertOk()
+            ->assertSee('Showing ratings for namespace')
+            ->assertSee('v6_title_tags')
+            ->assertSee('feedback_namespace=v6_title_tags', false);
     }
 }

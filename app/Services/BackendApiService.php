@@ -364,6 +364,22 @@ class BackendApiService
     }
 
     /**
+     * Manager analytics: by query, by video, summary, and detail rows.
+     *
+     * @return array<string, mixed>
+     */
+    public function getSearchFeedbackAnalytics(int $days = 30, ?string $namespace = null): array
+    {
+        $query = ['days' => $days];
+        $ns = $namespace !== null ? trim($namespace) : '';
+        if ($ns !== '') {
+            $query['namespace'] = $ns;
+        }
+
+        return $this->makeRequest('get', '/api/v1/tenant/search-feedback/analytics', $query, 60);
+    }
+
+    /**
      * Search videos using AI semantic search
      *
      * @deprecated Use semanticSearchVideos() for clarity; retained for callers that pass positional args.
