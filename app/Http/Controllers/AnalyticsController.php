@@ -291,7 +291,15 @@ class AnalyticsController extends Controller
                 return [self::FALLBACK_NAMESPACES, $default, 'Namespace list empty from API — using fallback.'];
             }
 
-            return [$list, $default, null];
+            $note = null;
+            $source = is_string($meta['namespace_source'] ?? null) ? (string) $meta['namespace_source'] : '';
+            if ($source === 'pinecone') {
+                $note = 'Namespace list synced from Pinecone index.';
+            } elseif ($source === 'embedding_schemes') {
+                $note = 'Pinecone namespace list unavailable — showing configured embedding schemes only.';
+            }
+
+            return [$list, $default, $note];
         } catch (\Exception $e) {
             return [self::FALLBACK_NAMESPACES, 'v6_title_tags', 'Could not load namespaces from API ('.$e->getMessage().') — using fallback.'];
         }

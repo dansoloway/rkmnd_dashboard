@@ -19,7 +19,10 @@
         <div>
             <h3 class="text-lg font-heading font-medium text-gray-900">Search feedback</h3>
             <p class="text-sm text-gray-500 mt-1">
-                Run a search here and rate results with 👍/👎, or rate recent queries below. History is listed at the bottom.
+                Run a search here and rate results with 👍/👎, or rate recent queries below.
+                @if(!empty($namespaceLoadNote))
+                    <span class="block mt-1 text-xs text-gray-400">{{ $namespaceLoadNote }}</span>
+                @endif
             </p>
         </div>
         <form method="GET" action="{{ route('analytics.index') }}" class="flex flex-wrap items-center gap-3">

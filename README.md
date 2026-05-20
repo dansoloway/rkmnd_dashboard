@@ -18,7 +18,7 @@ This Laravel application provides a beautiful, user-friendly interface for TuneU
 - View usage analytics, recent queries, and quotas
 - Manage their account settings
 
-**Production URL:** `https://rkmnd.fitform100.net` (see workspace `ARCHITECTURE.md` for server paths).
+**Production URL:** `https://rkmnd.fitform100.net` (see workspace `docs/projects-and-servers.md` for server paths).
 
 The app consumes the FastAPI backend at `https://fitform100.com` and provides a clean separation between the API layer and presentation layer.
 
@@ -97,7 +97,7 @@ Visit: `http://localhost:8000`
 ## 📚 Documentation
 
 ### Essential Reading
-1. **Workspace `ARCHITECTURE.md`** — multi-repo map, servers, data flows
+1. **Workspace `README.md` + `docs/`** — multi-repo map, servers, data flows
 2. **`ai_pipeline/tuneup_ai_pipeline/docs/SEARCH_FEEDBACK.md`** — search feedback API and dashboard behavior
 3. **`ai_pipeline/tuneup_ai_pipeline/docs/SEARCH_PIPELINE_CURRENT_STATE.md`** — how search scoring and gates work
 4. **`LARAVEL_INTEGRATION_GUIDE.md`** / **`API_ENDPOINTS_QUICK_REFERENCE.md`** — in pipeline `docs/`
