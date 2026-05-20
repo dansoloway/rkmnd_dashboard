@@ -33,6 +33,7 @@
     
     <!-- Your custom CSS (external file) -->
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
+    <style>[x-cloak] { display: none !important; }</style>
     
     @stack('head')
 </head>
@@ -43,98 +44,17 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between h-16">
                 <div class="flex">
-                    <!-- Logo -->
                     <div class="flex-shrink-0 flex items-center">
                         <a href="{{ route('dashboard') }}" class="text-xl font-bold text-gray-900 hover:text-blue-600">
                             {{ config('app.name', 'TuneUp Fitness') }}
                         </a>
                     </div>
-                    
-                    <!-- Navigation Links -->
-                    <div class="hidden md:ml-8 md:flex md:space-x-6">
-                        <a href="{{ route('dashboard') }}" class="inline-flex items-center px-1 pt-1 border-b-2 {{ request()->routeIs('dashboard') ? 'border-blue-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700' }}">
-                            Dashboard
-                        </a>
-                        <a href="{{ route('videos.index') }}" class="inline-flex items-center px-1 pt-1 border-b-2 {{ request()->routeIs('videos.index') || request()->routeIs('videos.show') || request()->routeIs('videos.database') || request()->routeIs('videos.embeddings-reconcile') || request()->routeIs('videos.search-visible-audio') || request()->routeIs('videos.embedding-text') ? 'border-blue-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700' }}">
-                            Videos
-                        </a>
-                        <a href="{{ route('videos.namespace-studio') }}" class="inline-flex items-center px-1 pt-1 border-b-2 {{ request()->routeIs('videos.namespace-studio') ? 'border-blue-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700' }}">
-                            Namespaces
-                        </a>
-                        <a href="{{ route('videos.search-visible-audio') }}" class="inline-flex items-center px-1 pt-1 border-b-2 {{ request()->routeIs('videos.search-visible-audio') ? 'border-blue-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700' }}">
-                            Search-visible Audio
-                        </a>
-                        <a href="{{ route('videos.database') }}" class="inline-flex items-center px-1 pt-1 border-b-2 {{ request()->routeIs('videos.database') ? 'border-blue-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700' }}">
-                            Metadata
-                        </a>
-                        <a href="{{ route('query.index') }}" class="inline-flex items-center px-1 pt-1 border-b-2 {{ request()->routeIs('query.*') ? 'border-blue-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700' }}">
-                            Query
-                        </a>
-                        <a href="{{ route('ai-search.index') }}" class="inline-flex items-center px-1 pt-1 border-b-2 {{ request()->routeIs('ai-search.*') ? 'border-blue-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700' }}">
-                            Semantic search
-                        </a>
-                        <a href="{{ route('analytics.index') }}" class="inline-flex items-center px-1 pt-1 border-b-2 {{ request()->routeIs('analytics.*') ? 'border-blue-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700' }}">
-                            Analytics
-                        </a>
-                        <a href="{{ route('sync-logs.index') }}" class="inline-flex items-center px-1 pt-1 border-b-2 {{ request()->routeIs('sync-logs.*') ? 'border-blue-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700' }}">
-                            Sync Logs
-                        </a>
-                        <a href="{{ route('account.index') }}" class="inline-flex items-center px-1 pt-1 border-b-2 {{ request()->routeIs('account.*') ? 'border-blue-500 text-gray-900' : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700' }}">
-                            Account
-                        </a>
-                    </div>
+                    @include('partials.nav-desktop')
                 </div>
-                
-                <!-- User Menu -->
-                <div class="flex items-center">
-                    @auth
-                        <span class="text-gray-700 mr-4 hidden md:block">{{ Auth::user()->name }}</span>
-                        <form method="POST" action="{{ route('logout') }}" class="inline">
-                            @csrf
-                            <button type="submit" class="text-gray-500 hover:text-gray-700 transition">
-                                Logout
-                            </button>
-                        </form>
-                    @endauth
-                </div>
+                @include('partials.nav-user-desktop')
             </div>
         </div>
-
-        <!-- Mobile Navigation -->
-        <div class="md:hidden border-t border-gray-200">
-            <div class="px-2 pt-2 pb-3 space-y-1">
-                <a href="{{ route('dashboard') }}" class="block px-3 py-2 rounded-md text-base font-medium {{ request()->routeIs('dashboard') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900' }}">
-                    Dashboard
-                </a>
-                <a href="{{ route('videos.index') }}" class="block px-3 py-2 rounded-md text-base font-medium {{ request()->routeIs('videos.index') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900' }}">
-                    Videos
-                </a>
-                <a href="{{ route('videos.search-visible-audio') }}" class="block px-3 py-2 rounded-md text-base font-medium {{ request()->routeIs('videos.search-visible-audio') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900' }}">
-                    Search-visible Audio
-                </a>
-                <a href="{{ route('videos.namespace-studio') }}" class="block px-3 py-2 rounded-md text-base font-medium {{ request()->routeIs('videos.namespace-studio') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900' }}">
-                    Namespace studio
-                </a>
-                <a href="{{ route('videos.database') }}" class="block px-3 py-2 rounded-md text-base font-medium {{ request()->routeIs('videos.database') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900' }}">
-                    Metadata
-                </a>
-                <a href="{{ route('query.index') }}" class="block px-3 py-2 rounded-md text-base font-medium {{ request()->routeIs('query.*') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900' }}">
-                    Query
-                </a>
-                <a href="{{ route('ai-search.index') }}" class="block px-3 py-2 rounded-md text-base font-medium {{ request()->routeIs('ai-search.*') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900' }}">
-                    Semantic search
-                </a>
-                <a href="{{ route('analytics.index') }}" class="block px-3 py-2 rounded-md text-base font-medium {{ request()->routeIs('analytics.*') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900' }}">
-                    Analytics
-                </a>
-                <a href="{{ route('sync-logs.index') }}" class="block px-3 py-2 rounded-md text-base font-medium {{ request()->routeIs('sync-logs.*') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900' }}">
-                    Sync Logs
-                </a>
-                <a href="{{ route('account.index') }}" class="block px-3 py-2 rounded-md text-base font-medium {{ request()->routeIs('account.*') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900' }}">
-                    Account
-                </a>
-            </div>
-        </div>
+        @include('partials.nav-mobile')
     </nav>
     
     <!-- Main Content -->

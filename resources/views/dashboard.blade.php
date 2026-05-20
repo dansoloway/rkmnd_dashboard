@@ -167,20 +167,6 @@
             </a>
         </div>
         
-        <!-- Debug Info (temporary) -->
-        <div class="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded text-xs font-mono">
-            <strong>Debug - Thumbnail URLs:</strong><br>
-            @foreach($recentVideos as $v)
-                Video {{ $v['id'] ?? 'N/A' }} ({{ Str::limit($v['title'] ?? 'N/A', 30) }}):<br>
-                &nbsp;&nbsp;jwp_id: {{ $v['jwp_id'] ?? 'NULL' }}<br>
-                &nbsp;&nbsp;thumbnail: {{ !empty($v['thumbnail']) ? $v['thumbnail'] : 'NULL' }}<br>
-                @if(!empty($v['thumbnail']))
-                    &nbsp;&nbsp;<a href="{{ $v['thumbnail'] }}" target="_blank" class="text-blue-600 underline">Test URL</a><br>
-                @endif
-                <br>
-            @endforeach
-        </div>
-        
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             @foreach(array_slice($recentVideos, 0, 6) as $video)
                 <a href="{{ route('videos.show', $video['id']) }}" class="block border border-gray-200 rounded-lg overflow-hidden hover:border-blue-500 hover:shadow-md transition">

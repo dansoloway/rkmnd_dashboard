@@ -23,6 +23,8 @@ Route::middleware(['auth'])->group(function () {
     // Videos
     Route::get('/videos/namespace-studio', [App\Http\Controllers\NamespaceStudioController::class, 'index'])->name('videos.namespace-studio');
     Route::post('/videos/namespace-studio/reconcile', [App\Http\Controllers\NamespaceStudioController::class, 'reconcile'])->name('videos.namespace-studio.reconcile');
+    Route::post('/videos/namespace-studio/fix-upsert', [App\Http\Controllers\NamespaceStudioController::class, 'fixUpsert'])->name('videos.namespace-studio.fix-upsert');
+    Route::post('/videos/namespace-studio/fix-delete', [App\Http\Controllers\NamespaceStudioController::class, 'fixDelete'])->name('videos.namespace-studio.fix-delete');
     Route::get('/videos/{id}/embedding-text', [App\Http\Controllers\NamespaceStudioController::class, 'embeddingText'])
         ->whereNumber('id')
         ->name('videos.embedding-text');
@@ -35,10 +37,10 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/videos/{id}', [App\Http\Controllers\VideoController::class, 'show'])->name('videos.show');
     Route::post('/videos/{id}/thumbnail', [App\Http\Controllers\VideoController::class, 'updateThumbnail'])->name('videos.update-thumbnail');
     
-    // Query AI Pipeline
-    Route::get('/query', [App\Http\Controllers\QueryController::class, 'index'])->name('query.index');
+    // Legacy query page — redirect to metadata explorer
+    Route::redirect('/query', '/videos/database')->name('query.index');
 
-    // Semantic search (POST /api/v1/search playground)
+    // AI Search (POST /api/v1/search playground)
     Route::get('/ai-search', [App\Http\Controllers\AiSearchController::class, 'index'])->name('ai-search.index');
     Route::post('/ai-search', [App\Http\Controllers\AiSearchController::class, 'search'])->name('ai-search.search');
     Route::post('/ai-search/feedback', [App\Http\Controllers\AiSearchController::class, 'feedback'])->name('ai-search.feedback');
