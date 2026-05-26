@@ -178,16 +178,75 @@
 
     @include('analytics.partials.search-feedback-section')
 
+    <!-- Searches by user -->
+    <div class="bg-white rounded-lg shadow-sm p-6">
+        <h3 class="text-lg font-heading font-medium text-gray-900 mb-4">Searches by user</h3>
+        <p class="text-sm text-gray-500 mb-4">WordPress users grouped by email (last 7 days). Anonymous searches appear when no user was logged in.</p>
+        @if(!empty($queriesByUser))
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Searches</th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last search</th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        @foreach($queriesByUser as $userRow)
+                            @php
+                                $uEmail = trim((string) ($userRow['user_email'] ?? ''));
+                                $uName = trim((string) ($userRow['user_name'] ?? ''));
+                            @endphp
+                            <tr>
+                                <td class="px-4 py-3 text-sm text-gray-900">{{ $uName !== '' ? e($uName) : '—' }}</td>
+                                <td class="px-4 py-3 text-sm text-gray-600">{{ $uEmail !== '' ? e($uEmail) : 'Anonymous' }}</td>
+                                <td class="px-4 py-3 text-sm text-gray-500">{{ (int) ($userRow['search_count'] ?? 0) }}</td>
+                                <td class="px-4 py-3 text-sm whitespace-nowrap">
+                                    @include('partials.analytics-datetime', ['isoTimestamp' => $userRow['last_search_at'] ?? null])
+                                </td>
+                                <td class="px-4 py-3 text-sm">
+                                    @if($uEmail !== '')
+                                        <a href="{{ route('analytics.index', array_filter(['user_email' => $uEmail])) }}" class="text-blue-600 hover:text-blue-800">View searches</a>
+                                    @else
+                                        <span class="text-gray-400">—</span>
+                                    @endif
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @else
+            <p class="text-sm text-gray-500">No user-attributed searches in the last 7 days.</p>
+        @endif
+    </div>
+
     <!-- Recent Search Queries -->
     <div class="bg-white rounded-lg shadow-sm p-6">
         <h3 class="text-lg font-heading font-medium text-gray-900 mb-4">Recent Search Queries</h3>
         <p class="text-sm text-gray-500 mb-4">Production searches (last 7 days). Rate results when a session id is available (searches after May 2026 deploy).</p>
+        <form method="get" action="{{ route('analytics.index') }}" class="mb-4 flex flex-wrap items-end gap-3">
+            <div>
+                <label for="query-user-filter" class="block text-xs font-medium text-gray-500 mb-1">Filter by name or email</label>
+                <input type="text" name="user" id="query-user-filter" value="{{ e($queryUserFilters['user'] ?? '') }}" placeholder="Name or email" class="rounded-md border-gray-300 shadow-sm text-sm">
+            </div>
+            <div class="flex gap-2">
+                <button type="submit" class="px-3 py-2 text-sm rounded-md bg-gray-800 text-white hover:bg-gray-700">Filter</button>
+                @if(!empty($queryUserFilters['user']) || !empty($queryUserFilters['user_email']))
+                    <a href="{{ route('analytics.index') }}" class="px-3 py-2 text-sm rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50">Clear</a>
+                @endif
+            </div>
+        </form>
         @if(!empty($recentQueries))
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
                             <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Query</th>
+                            <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
                             <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
                             <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Count</th>
                             <th scope="col" class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Results &amp; rate</th>
@@ -209,6 +268,22 @@
                                     <span class="font-medium">{{ e($item['query'] ?? '-') }}</span>
                                     @if(!empty($item['namespace']))
                                         <span class="block text-xs text-gray-400 font-mono">{{ $item['namespace'] }}</span>
+                                    @endif
+                                </td>
+                                <td class="px-4 py-3 text-sm text-gray-600">
+                                    @php
+                                        $rowUserName = trim((string) ($item['user_name'] ?? ''));
+                                        $rowUserEmail = trim((string) ($item['user_email'] ?? ''));
+                                    @endphp
+                                    @if($rowUserName !== '' || $rowUserEmail !== '')
+                                        @if($rowUserName !== '')
+                                            <span class="block">{{ e($rowUserName) }}</span>
+                                        @endif
+                                        @if($rowUserEmail !== '')
+                                            <span class="block text-xs text-gray-400">{{ e($rowUserEmail) }}</span>
+                                        @endif
+                                    @else
+                                        <span class="text-gray-400">—</span>
                                     @endif
                                 </td>
                                 <td class="px-4 py-3 text-sm whitespace-nowrap">

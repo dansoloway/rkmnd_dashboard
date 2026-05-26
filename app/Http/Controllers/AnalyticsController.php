@@ -111,6 +111,8 @@ class AnalyticsController extends Controller
                 'analytics' => null,
                 'stats' => null,
                 'recentQueries' => [],
+                'queriesByUser' => [],
+                'queryUserFilters' => ['user_email' => null, 'user' => null],
                 'searchFeedback' => [],
                 'searchFeedbackError' => null,
                 'feedbackDays' => 30,
@@ -147,12 +149,20 @@ class AnalyticsController extends Controller
             Log::info('Stats endpoint not available');
         }
 
+        $queryUserFilters = $this->resolveQueryUserFilters($request);
         $recentQueries = [];
+        $queriesByUser = [];
         try {
-            $queriesResponse = $api->getRecentQueries(50, 7);
+            $queriesResponse = $api->getRecentQueries(50, 7, array_filter($queryUserFilters));
             $recentQueries = $queriesResponse['queries'] ?? [];
         } catch (\Exception $e) {
             Log::warning('Queries endpoint failed', ['error' => $e->getMessage()]);
+        }
+        try {
+            $byUserResponse = $api->getQueriesByUser(50, 7);
+            $queriesByUser = $byUserResponse['users'] ?? [];
+        } catch (\Exception $e) {
+            Log::warning('Queries by user endpoint failed', ['error' => $e->getMessage()]);
         }
 
         [$namespaces, $defaultNamespace, $namespaceLoadNote] = $this->resolveNamespacesMeta($api);
@@ -198,6 +208,8 @@ class AnalyticsController extends Controller
             'analytics' => $analytics,
             'stats' => $stats,
             'recentQueries' => is_array($recentQueries) ? $recentQueries : [],
+            'queriesByUser' => is_array($queriesByUser) ? $queriesByUser : [],
+            'queryUserFilters' => $queryUserFilters,
             'searchFeedback' => $searchFeedback,
             'searchFeedbackError' => $searchFeedbackError,
             'feedbackAnalytics' => $feedbackAnalytics,
@@ -210,6 +222,20 @@ class AnalyticsController extends Controller
             'defaultNamespace' => $defaultNamespace,
             'namespaceLoadNote' => $namespaceLoadNote,
             'error' => null,
+        ];
+    }
+
+    /**
+     * @return array{user_email: ?string, user: ?string}
+     */
+    private function resolveQueryUserFilters(Request $request): array
+    {
+        $email = trim((string) $request->query('user_email', $request->input('user_email', '')));
+        $user = trim((string) $request->query('user', $request->input('user', '')));
+
+        return [
+            'user_email' => $email !== '' ? $email : null,
+            'user' => $user !== '' ? $user : null,
         ];
     }
 

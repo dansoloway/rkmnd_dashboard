@@ -132,6 +132,10 @@ class BackendApiFake
                 return Http::response(self::searchFeedbackPayload());
             }
 
+            if (str_contains($path, '/api/v1/tenant/queries/by-user')) {
+                return Http::response(self::queriesByUserPayload());
+            }
+
             if (str_contains($path, '/api/v1/tenant/queries')) {
                 return Http::response(self::recentQueriesPayload());
             }
@@ -341,6 +345,31 @@ class BackendApiFake
     /**
      * @return array<string, mixed>
      */
+    public static function queriesByUserPayload(): array
+    {
+        return [
+            'users' => [
+                [
+                    'user_name' => 'Jane Member',
+                    'user_email' => 'jane@example.com',
+                    'search_count' => 2,
+                    'last_search_at' => now()->subHour()->toIso8601String(),
+                    'queries' => [
+                        [
+                            'query' => 'shoulder pain',
+                            'search_id' => 'test-search-session-001',
+                            'timestamp' => now()->subHour()->toIso8601String(),
+                            'result_count' => 1,
+                            'namespace' => 'v6_title_tags',
+                        ],
+                    ],
+                ],
+            ],
+            'count' => 1,
+            'days' => 7,
+        ];
+    }
+
     public static function recentQueriesPayload(): array
     {
         return [
@@ -351,6 +380,8 @@ class BackendApiFake
                     'timestamp' => now()->subHour()->toIso8601String(),
                     'result_count' => 1,
                     'namespace' => 'v6_title_tags',
+                    'user_name' => 'Jane Member',
+                    'user_email' => 'jane@example.com',
                     'results' => [
                         [
                             'title' => 'Hip Mobility Flow',

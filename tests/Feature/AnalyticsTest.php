@@ -68,6 +68,17 @@ class AnalyticsTest extends FeatureTestCase
             ->assertSee(route('videos.show', 81), false);
     }
 
+    public function test_analytics_shows_search_user_attribution(): void
+    {
+        $this->actingAsTenantUser();
+
+        $this->get(route('analytics.index'))
+            ->assertOk()
+            ->assertSee('Searches by user')
+            ->assertSee('Jane Member')
+            ->assertSee('jane@example.com');
+    }
+
     public function test_analytics_feedback_manager_views(): void
     {
         $this->actingAsTenantUser();

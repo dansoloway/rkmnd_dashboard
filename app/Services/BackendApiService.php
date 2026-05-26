@@ -117,11 +117,31 @@ class BackendApiService
     /**
      * Get recent search queries from users
      * Cache: 2 minutes (want relatively fresh data)
+     *
+     * @param  array{user_email?: string, user?: string}  $filters
      */
-    public function getRecentQueries(int $limit = 50, int $days = 7): array
+    public function getRecentQueries(int $limit = 50, int $days = 7, array $filters = []): array
     {
         $params = ['limit' => $limit, 'days' => $days];
+        if (! empty($filters['user_email'])) {
+            $params['user_email'] = (string) $filters['user_email'];
+        }
+        if (! empty($filters['user'])) {
+            $params['user'] = (string) $filters['user'];
+        }
+
         return $this->makeRequest('get', '/api/v1/tenant/queries', $params, 120);
+    }
+
+    /**
+     * Recent searches grouped by WordPress user.
+     * Cache: 2 minutes
+     */
+    public function getQueriesByUser(int $limit = 50, int $days = 7): array
+    {
+        $params = ['limit' => $limit, 'days' => $days];
+
+        return $this->makeRequest('get', '/api/v1/tenant/queries/by-user', $params, 120);
     }
 
     // ==========================================
