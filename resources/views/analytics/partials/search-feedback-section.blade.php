@@ -26,6 +26,7 @@
             </p>
         </div>
         <form method="GET" action="{{ route('analytics.index') }}" class="flex flex-wrap items-center gap-3">
+            <input type="hidden" name="tab" value="feedback">
             <input type="hidden" name="feedback_tab" value="{{ $feedbackTab }}">
             <div class="flex items-center gap-2">
                 <label for="feedback_days" class="text-sm text-gray-600">Period</label>
@@ -122,4 +123,6 @@
     </div>
 
     @include('analytics.partials.search-feedback-manager')
+
+    @include('analytics.partials.satisfaction-analytics')
 </div>

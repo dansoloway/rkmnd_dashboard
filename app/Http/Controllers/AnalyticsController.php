@@ -90,6 +90,8 @@ class AnalyticsController extends Controller
             $request->merge(['feedback_namespace' => $validated['feedback_namespace']]);
         }
 
+        $request->merge(['tab' => 'feedback']);
+
         return $this->renderAnalytics($request, $extra);
     }
 
@@ -98,14 +100,18 @@ class AnalyticsController extends Controller
      */
     private function renderAnalytics(Request $request, array $extra = []): View
     {
+        $analyticsTab = $this->resolveAnalyticsTab($request);
+
         try {
             $data = $this->analyticsViewData($request);
+            $data['analyticsTab'] = $analyticsTab;
 
             return view('analytics.index', array_merge($data, $this->rateSearchDefaults(), $extra));
         } catch (\Exception $e) {
             Log::error('Failed to load analytics', ['error' => $e->getMessage()]);
 
             return view('analytics.index', array_merge([
+                'analyticsTab' => $analyticsTab,
                 'tenantInfo' => null,
                 'quota' => null,
                 'analytics' => null,
@@ -123,6 +129,22 @@ class AnalyticsController extends Controller
                 'error' => 'Unable to load analytics data.',
             ], $this->rateSearchDefaults(), $extra));
         }
+    }
+
+    private function resolveAnalyticsTab(Request $request): string
+    {
+        $explicit = (string) $request->query('tab', $request->input('tab', ''));
+        if (in_array($explicit, ['overview', 'searches', 'feedback'], true)) {
+            return $explicit;
+        }
+
+        $email = trim((string) $request->query('user_email', $request->input('user_email', '')));
+        $user = trim((string) $request->query('user', $request->input('user', '')));
+        if ($email !== '' || $user !== '') {
+            return 'searches';
+        }
+
+        return 'overview';
     }
 
     /**
