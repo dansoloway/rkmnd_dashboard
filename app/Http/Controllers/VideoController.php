@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\BackendApiService;
+use App\Support\ProductContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -202,7 +203,7 @@ class VideoController extends Controller
             $api = $this->getApiService();
 
             // Get filter parameters from request
-            $filters = [
+            $filters = array_merge(ProductContext::catalogFilters(), [
                 'limit' => $request->input('limit', 24),
                 'offset' => $request->input('offset', 0),
                 'category' => $request->input('category'),
@@ -213,7 +214,11 @@ class VideoController extends Controller
                 'post_type' => $request->input('post_type'),
                 'sort_by' => $request->input('sort_by', 'created_at'),
                 'sort_order' => $request->input('sort_order', 'desc'),
-            ];
+            ]);
+
+            if (empty($filters['post_type']) && isset(ProductContext::catalogFilters()['post_type'])) {
+                $filters['post_type'] = ProductContext::catalogFilters()['post_type'];
+            }
 
             // Remove null values
             $filters = array_filter($filters, function ($value) {
@@ -255,7 +260,7 @@ class VideoController extends Controller
             $currentPage = floor($filters['offset'] / $perPage) + 1;
             $totalPages = ceil($total / $perPage);
 
-            return view('videos.index', compact(
+            return view('videos.index', array_merge(compact(
                 'videos',
                 'total',
                 'categories',
@@ -264,7 +269,10 @@ class VideoController extends Controller
                 'currentPage',
                 'totalPages',
                 'filters'
-            ));
+            ), [
+                'productId' => ProductContext::id(),
+                'product' => ProductContext::config(),
+            ]));
 
         } catch (\Exception $e) {
             Log::error('Failed to load videos', [
@@ -280,6 +288,8 @@ class VideoController extends Controller
                 'currentPage' => 1,
                 'totalPages' => 1,
                 'filters' => [],
+                'productId' => ProductContext::id(),
+                'product' => ProductContext::config(),
                 'error' => 'Unable to load videos. Please try again later.'
             ]);
         }
@@ -478,7 +488,27 @@ class VideoController extends Controller
                 $audioUrl = $audioPreview['s3_url'] ?? null;
             }
 
-            return view('videos.show', compact('video', 'embeddings', 'audioPreviews', 'relatedVideos', 'audioUrl', 'defaultSearchNamespace', 'defaultEmbeddingIndex', 'computedV6EmbeddingText', 'computedV6EmbeddingFields'));
+            $productId = ProductContext::inferFromVideo(is_array($video) ? $video : []);
+            $requestProduct = $request->query('product');
+            if (is_string($requestProduct) && ProductContext::exists($requestProduct)) {
+                $productId = $requestProduct;
+            }
+
+            return view('videos.show', array_merge(compact(
+                'video',
+                'embeddings',
+                'audioPreviews',
+                'relatedVideos',
+                'audioUrl',
+                'computedV6EmbeddingText',
+                'computedV6EmbeddingFields'
+            ), [
+                'productId' => $productId,
+                'product' => ProductContext::config($productId),
+                'libraryRoute' => ProductContext::libraryRoute($productId),
+                'defaultSearchNamespace' => ProductContext::defaultNamespace($productId),
+                'defaultEmbeddingIndex' => $defaultEmbeddingIndex,
+            ]));
 
         } catch (\Exception $e) {
             Log::error('Failed to load video', [
@@ -486,7 +516,7 @@ class VideoController extends Controller
                 'error' => $e->getMessage()
             ]);
 
-            return redirect()->route('videos.index')
+            return redirect()->route(ProductContext::libraryRoute())
                 ->with('error', 'Video not found.');
         }
     }

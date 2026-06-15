@@ -4,85 +4,107 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Primary navigation (desktop top bar + mobile)
+    | Primary navigation (product-first)
     |--------------------------------------------------------------------------
     */
 
     'primary' => [
         [
-            'label' => 'Dashboard',
+            'label' => 'Home',
             'route' => 'dashboard',
             'active' => ['dashboard'],
         ],
         [
-            'label' => 'Videos',
-            'route' => 'videos.index',
-            'active' => [
-                'videos.index',
-                'videos.show',
-                'videos.database',
-                'videos.embeddings-reconcile',
-                'videos.search-visible-audio',
-                'videos.namespace-studio',
-                'videos.embedding-text',
-            ],
+            'label' => 'AI Video Search',
+            'active' => ['ai-search.*'],
             'children' => [
                 [
                     'label' => 'Library',
-                    'route' => 'videos.index',
-                    'active' => ['videos.index', 'videos.show'],
+                    'route' => 'ai-search.videos.index',
+                    'active' => ['ai-search.videos.*'],
+                ],
+                [
+                    'label' => 'Semantic search',
+                    'route' => 'ai-search.playground.index',
+                    'active' => ['ai-search.playground.*'],
+                ],
+                [
+                    'label' => 'Search-visible audio',
+                    'route' => 'ai-search.search-visible-audio',
+                    'active' => ['ai-search.search-visible-audio'],
+                ],
+                [
+                    'label' => 'Namespace studio',
+                    'route' => 'ai-search.namespace-studio',
+                    'active' => ['ai-search.namespace-studio', 'ai-search.embedding-text'],
+                ],
+                [
+                    'label' => 'Analytics',
+                    'route' => 'ai-search.analytics',
+                    'active' => ['ai-search.analytics*'],
+                ],
+            ],
+        ],
+        [
+            'label' => 'MOW/ROW',
+            'active' => ['mow-row.*'],
+            'children' => [
+                [
+                    'label' => 'Catalog',
+                    'route' => 'mow-row.catalog',
+                    'active' => ['mow-row.catalog'],
+                ],
+                [
+                    'label' => 'Semantic search',
+                    'route' => 'mow-row.search.index',
+                    'active' => ['mow-row.search.*'],
+                ],
+                [
+                    'label' => 'Namespace studio',
+                    'route' => 'mow-row.namespace-studio',
+                    'active' => ['mow-row.namespace-studio', 'mow-row.embedding-text'],
+                ],
+                [
+                    'label' => 'Featured this week',
+                    'route' => 'mow-row.featured',
+                    'active' => ['mow-row.featured'],
+                ],
+            ],
+        ],
+        [
+            'label' => 'Platform',
+            'active' => ['sync-logs.*', 'account.*', 'videos.database', 'videos.embeddings-reconcile', 'query.*'],
+            'children' => [
+                [
+                    'label' => 'Sync logs',
+                    'route' => 'sync-logs.index',
+                    'active' => ['sync-logs.*'],
                 ],
                 [
                     'label' => 'Metadata explorer',
                     'route' => 'videos.database',
-                    'active' => ['videos.database'],
-                ],
-                [
-                    'label' => 'Namespace studio',
-                    'route' => 'videos.namespace-studio',
-                    'active' => ['videos.namespace-studio', 'videos.embedding-text'],
-                ],
-                [
-                    'label' => 'Search-visible audio',
-                    'route' => 'videos.search-visible-audio',
-                    'active' => ['videos.search-visible-audio'],
+                    'active' => ['videos.database', 'videos.database-export', 'query.*'],
                 ],
                 [
                     'label' => 'Embeddings reconcile',
                     'route' => 'videos.embeddings-reconcile',
                     'active' => ['videos.embeddings-reconcile'],
                 ],
+                [
+                    'label' => 'Account',
+                    'route' => 'account.index',
+                    'active' => ['account.*'],
+                ],
             ],
-        ],
-        [
-            'label' => 'AI Search',
-            'route' => 'ai-search.index',
-            'active' => ['ai-search.*'],
-        ],
-        [
-            'label' => 'Analytics',
-            'route' => 'analytics.index',
-            'active' => ['analytics.*'],
         ],
     ],
 
     /*
     |--------------------------------------------------------------------------
-    | User menu (account, sync logs, logout)
+    | User menu (logout only — account moved under Platform)
     |--------------------------------------------------------------------------
     */
 
-    'user' => [
-        [
-            'label' => 'Account',
-            'route' => 'account.index',
-            'active' => ['account.*'],
-        ],
-        [
-            'label' => 'Sync logs',
-            'route' => 'sync-logs.index',
-            'active' => ['sync-logs.*'],
-        ],
-    ],
+    'user' => [],
 
 ];

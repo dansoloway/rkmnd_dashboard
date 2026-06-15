@@ -17,7 +17,7 @@ class NamespaceStudioTest extends FeatureTestCase
     {
         $this->actingAsTenantUser();
 
-        $this->get(route('videos.namespace-studio'))
+        $this->get(route('ai-search.namespace-studio'))
             ->assertOk()
             ->assertViewIs('videos.namespace-studio')
             ->assertSee('Namespace studio')
@@ -28,7 +28,7 @@ class NamespaceStudioTest extends FeatureTestCase
     {
         $this->actingAsTenantUser();
 
-        $this->get(route('videos.namespace-studio'))
+        $this->get(route('ai-search.namespace-studio'))
             ->assertOk()
             ->assertViewHas('hasNamespace', false)
             ->assertViewHas('rows', [])
@@ -40,7 +40,7 @@ class NamespaceStudioTest extends FeatureTestCase
     {
         $this->actingAsTenantUser();
 
-        $this->get(route('videos.namespace-studio', ['namespace' => 'v6_title_tags']))
+        $this->get(route('ai-search.namespace-studio', ['namespace' => 'v6_title_tags']))
             ->assertOk()
             ->assertSee('Namespace overview')
             ->assertSee('Videos in namespace')
@@ -61,7 +61,7 @@ class NamespaceStudioTest extends FeatureTestCase
             'reconciled_at' => now()->subHour(),
         ]);
 
-        $this->get(route('videos.namespace-studio', ['namespace' => 'v6_title_tags']))
+        $this->get(route('ai-search.namespace-studio', ['namespace' => 'v6_title_tags']))
             ->assertOk()
             ->assertSee('42')
             ->assertSee('Reconcile gaps')
@@ -84,7 +84,7 @@ class NamespaceStudioTest extends FeatureTestCase
 
         $this->actingAsTenantUser();
 
-        $this->get(route('videos.namespace-studio', ['namespace' => 'v6_title_tags']))
+        $this->get(route('ai-search.namespace-studio', ['namespace' => 'v6_title_tags']))
             ->assertOk()
             ->assertSee('Test Video One');
 
@@ -96,7 +96,7 @@ class NamespaceStudioTest extends FeatureTestCase
         $tenant = Tenant::factory()->create();
         $user = $this->actingAsTenantUser(null, $tenant);
 
-        $this->postJson(route('videos.namespace-studio.reconcile'), [
+        $this->postJson(route('ai-search.namespace-studio.reconcile'), [
             'namespace' => 'v6_title_tags',
         ])
             ->assertOk()
@@ -135,7 +135,7 @@ class NamespaceStudioTest extends FeatureTestCase
             'reconciled_at' => now()->subHour(),
         ]);
 
-        $this->get(route('videos.namespace-studio', ['namespace' => 'v6_title_tags']))
+        $this->get(route('ai-search.namespace-studio', ['namespace' => 'v6_title_tags']))
             ->assertOk()
             ->assertSee('Last saved reconcile');
     }
@@ -163,7 +163,7 @@ class NamespaceStudioTest extends FeatureTestCase
     {
         $this->actingAsTenantUser();
 
-        $this->postJson(route('videos.namespace-studio.fix-upsert'), [
+        $this->postJson(route('ai-search.namespace-studio.fix-upsert'), [
             'namespace' => 'v6_title_tags',
             'video_ids' => [2],
         ])
@@ -176,7 +176,7 @@ class NamespaceStudioTest extends FeatureTestCase
     {
         $this->actingAsTenantUser();
 
-        $this->postJson(route('videos.namespace-studio.fix-delete'), [
+        $this->postJson(route('ai-search.namespace-studio.fix-delete'), [
             'namespace' => 'v6_title_tags',
             'jwp_ids' => ['orphan-vec'],
         ])
@@ -197,7 +197,7 @@ class NamespaceStudioTest extends FeatureTestCase
             'reconciled_at' => now(),
         ]);
 
-        $this->get(route('videos.namespace-studio', ['namespace' => 'v6_title_tags']))
+        $this->get(route('ai-search.namespace-studio', ['namespace' => 'v6_title_tags']))
             ->assertOk()
             ->assertSee('Upsert')
             ->assertSee('Delete')

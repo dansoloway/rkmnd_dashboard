@@ -2,7 +2,9 @@
     $searchFeedback = $searchFeedback ?? [];
     $feedbackSummary = $feedbackSummary ?? ['up' => 0, 'down' => 0, 'total' => 0];
     $feedbackDays = $feedbackDays ?? 30;
-    $feedbackUrl = route('ai-search.feedback');
+    $feedbackUrl = $feedbackUrl ?? route('ai-search.playground.feedback');
+    $analyticsIndexRoute = $analyticsIndexRoute ?? 'ai-search.analytics';
+    $analyticsSearchRoute = $analyticsSearchRoute ?? 'ai-search.analytics.search';
     $feedbackCsrf = csrf_token();
     $rateSearchQuery = $rateSearchQuery ?? '';
     $rateSearchNamespace = $rateSearchNamespace ?? ($defaultNamespace ?? 'v6_title_tags');
@@ -25,7 +27,7 @@
                 @endif
             </p>
         </div>
-        <form method="GET" action="{{ route('analytics.index') }}" class="flex flex-wrap items-center gap-3">
+        <form method="GET" action="{{ route($analyticsIndexRoute) }}" class="flex flex-wrap items-center gap-3">
             <input type="hidden" name="tab" value="feedback">
             <input type="hidden" name="feedback_tab" value="{{ $feedbackTab }}">
             <div class="flex items-center gap-2">
@@ -60,7 +62,7 @@
 
     <div class="border border-blue-100 bg-blue-50/40 rounded-lg p-4 mb-6">
         <h4 class="text-sm font-semibold text-gray-900 mb-3">Rate a search</h4>
-        <form method="POST" action="{{ route('analytics.search') }}" class="space-y-3">
+        <form method="POST" action="{{ route($analyticsSearchRoute) }}" class="space-y-3">
             @csrf
             <input type="hidden" name="feedback_days" value="{{ $feedbackDays }}">
             <input type="hidden" name="feedback_tab" value="{{ $feedbackTab }}">

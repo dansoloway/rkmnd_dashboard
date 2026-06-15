@@ -1,5 +1,6 @@
 @php
     $feedbackTab = $feedbackTab ?? 'overview';
+    $analyticsIndexRoute = $analyticsIndexRoute ?? 'ai-search.analytics';
     $feedbackDays = $feedbackDays ?? 30;
     $feedbackSummary = $feedbackSummary ?? [];
     $feedbackAnalytics = $feedbackAnalytics ?? null;
@@ -31,7 +32,7 @@
 <nav class="flex flex-wrap gap-2 border-b border-gray-200 mb-6" aria-label="Feedback views">
     @foreach($tabs as $key => $label)
         <a
-            href="{{ route('analytics.index', array_merge($tabParams, ['feedback_tab' => $key])) }}#search-feedback"
+            href="{{ route($analyticsIndexRoute, array_merge($tabParams, ['feedback_tab' => $key])) }}#search-feedback"
             class="px-3 py-2 text-sm font-medium rounded-t-md border-b-2 -mb-px {{ $feedbackTab === $key ? 'border-blue-600 text-blue-700' : 'border-transparent text-gray-600 hover:text-gray-900 hover:border-gray-300' }}"
         >{{ $label }}</a>
     @endforeach

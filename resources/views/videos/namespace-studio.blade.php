@@ -2,10 +2,18 @@
 
 @section('content')
 @php
+    $studioRoutes = $studioRoutes ?? [
+        'reconcile' => route('ai-search.namespace-studio.reconcile'),
+        'fixUpsert' => route('ai-search.namespace-studio.fix-upsert'),
+        'fixDelete' => route('ai-search.namespace-studio.fix-delete'),
+        'index' => route('ai-search.namespace-studio'),
+    ];
+    $libraryRoute = $libraryRoute ?? 'ai-search.videos.index';
+    $namespaceStudioRoute = request()->route()->getName() ?? 'ai-search.namespace-studio';
     $namespaceStudioBoot = [
-        'reconcileUrl' => route('videos.namespace-studio.reconcile'),
-        'fixUpsertUrl' => route('videos.namespace-studio.fix-upsert'),
-        'fixDeleteUrl' => route('videos.namespace-studio.fix-delete'),
+        'reconcileUrl' => $studioRoutes['reconcile'],
+        'fixUpsertUrl' => $studioRoutes['fixUpsert'],
+        'fixDeleteUrl' => $studioRoutes['fixDelete'],
         'embeddingTextBase' => url('/videos'),
         'selectedNamespace' => $selectedNamespace,
         'viewMode' => $viewMode,
@@ -20,20 +28,23 @@
 
     <div class="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
+            @if(!empty($product['label']))
+                <p class="text-sm text-blue-700 font-medium">{{ $product['label'] }}</p>
+            @endif
             <h1 class="text-2xl font-heading font-bold text-gray-900">Namespace studio</h1>
             <p class="mt-1 text-sm text-gray-600">
                 Pick an embedding scheme namespace. Overview and catalog are scoped to that namespace only.
                 Run reconcile for Pinecone vs DB counts.
             </p>
         </div>
-        <a href="{{ route('videos.index') }}" class="text-sm text-blue-600 hover:text-blue-800">← Video library</a>
+        <a href="{{ route($libraryRoute) }}" class="text-sm text-blue-600 hover:text-blue-800">← {{ ($productId ?? '') === 'mow_row' ? 'Catalog' : 'Video library' }}</a>
     </div>
 
     @if(!empty($namespaceNote))
         <p class="mb-4 text-sm text-amber-800 bg-amber-50 border border-amber-100 rounded px-3 py-2">{{ $namespaceNote }}</p>
     @endif
 
-    <form method="get" action="{{ route('videos.namespace-studio') }}" class="mb-6 flex flex-wrap gap-4 items-end">
+    <form method="get" action="{{ $studioRoutes['index'] }}" class="mb-6 flex flex-wrap gap-4 items-end">
         <div>
             <label for="namespace" class="block text-sm font-medium text-gray-700 mb-1">Namespace</label>
             <select name="namespace" id="namespace"
@@ -290,7 +301,7 @@
                         <span class="px-3 py-1 bg-blue-600 text-white rounded text-sm">{{ $p }}</span>
                     @else
                         <a class="px-3 py-1 bg-gray-100 text-gray-800 rounded text-sm hover:bg-gray-200"
-                           href="{{ route('videos.namespace-studio', ['namespace' => $selectedNamespace, 'view' => 'all', 'search' => $search, 'page' => $p]) }}">{{ $p }}</a>
+                           href="{{ route($namespaceStudioRoute, ['namespace' => $selectedNamespace, 'view' => 'all', 'search' => $search, 'page' => $p]) }}">{{ $p }}</a>
                     @endif
                 @endfor
             </nav>
@@ -304,7 +315,7 @@
         @else
             <p class="text-sm text-gray-600 bg-blue-50 border border-blue-100 rounded-lg px-4 py-3 mb-2">
                 Reconcile gaps only (catalog table hidden).
-                <a href="{{ route('videos.namespace-studio', ['namespace' => $selectedNamespace, 'view' => 'all', 'search' => $search]) }}"
+                <a href="{{ route($namespaceStudioRoute, ['namespace' => $selectedNamespace, 'view' => 'all', 'search' => $search]) }}"
                    class="text-blue-600 hover:underline">Show videos in this namespace</a>
             </p>
         @endif

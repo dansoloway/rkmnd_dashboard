@@ -10,7 +10,7 @@ class AiSearchTest extends FeatureTestCase
     {
         $this->actingAsTenantUser();
 
-        $response = $this->post(route('ai-search.search'), [
+        $response = $this->post(route('ai-search.playground.search'), [
             'query' => 'hip mobility',
             'namespace' => 'v6_title_tags',
         ]);

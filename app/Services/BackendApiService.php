@@ -296,6 +296,16 @@ class BackendApiService
     }
 
     /**
+     * Latest Move of the Week and Rollout of the Week (MOW/ROW PWA homepage data).
+     *
+     * @return array{move?: array<string, mixed>|null, weekly?: array<string, mixed>|null, as_of?: string}
+     */
+    public function getMowRowFeaturedWeekly(): array
+    {
+        return $this->makeRequest('get', '/api/v1/mow-row/featured-weekly', [], 300);
+    }
+
+    /**
      * Available embedding namespaces and default for POST /api/v1/search
      *
      * @return array{namespaces: list<string>, default: string, schemes?: array<string, mixed>}

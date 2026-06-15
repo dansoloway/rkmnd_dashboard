@@ -1,5 +1,7 @@
 @php
     $queryUserFilters = $queryUserFilters ?? ['user_email' => null, 'user' => null];
+    $analyticsIndexRoute = $analyticsIndexRoute ?? 'ai-search.analytics';
+    $feedbackUrl = $feedbackUrl ?? route('ai-search.playground.feedback');
     $activeFilter = $queryUserFilters['user_email'] ?? $queryUserFilters['user'] ?? null;
     $recentQueries = $recentQueries ?? [];
     $queriesByUser = $queriesByUser ?? [];
@@ -11,13 +13,13 @@
         <p class="text-sm text-blue-900">
             Showing searches for <span class="font-semibold">{{ e($activeFilter) }}</span>
         </p>
-        <a href="{{ route('analytics.index', ['tab' => 'searches']) }}" class="text-sm font-medium text-blue-700 hover:text-blue-900">Clear filter</a>
+        <a href="{{ route($analyticsIndexRoute, ['tab' => 'searches']) }}" class="text-sm font-medium text-blue-700 hover:text-blue-900">Clear filter</a>
     </div>
 @endif
 
 {{-- Filter form --}}
 <div class="bg-white rounded-lg shadow-sm p-5">
-    <form method="get" action="{{ route('analytics.index') }}" class="flex flex-wrap items-end gap-3">
+    <form method="get" action="{{ route($analyticsIndexRoute) }}" class="flex flex-wrap items-end gap-3">
         <input type="hidden" name="tab" value="searches">
         <div>
             <label for="query-user-filter" class="block text-xs font-medium text-gray-500 mb-1">Filter by name or email</label>
@@ -26,7 +28,7 @@
         <div class="flex gap-2">
             <button type="submit" class="px-3 py-2 text-sm rounded-md bg-gray-800 text-white hover:bg-gray-700">Filter</button>
             @if($activeFilter)
-                <a href="{{ route('analytics.index', ['tab' => 'searches']) }}" class="px-3 py-2 text-sm rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50">Clear</a>
+                <a href="{{ route($analyticsIndexRoute, ['tab' => 'searches']) }}" class="px-3 py-2 text-sm rounded-md border border-gray-300 text-gray-700 hover:bg-gray-50">Clear</a>
             @endif
         </div>
     </form>
@@ -56,7 +58,7 @@
                         @endphp
                         <tr @if($rowSearchId) x-data="searchFeedbackPanel({
                             searchId: @js($rowSearchId),
-                            feedbackUrl: @js(route('ai-search.feedback')),
+                            feedbackUrl: @js($feedbackUrl),
                             csrf: @js(csrf_token()),
                             source: 'analytics',
                         })" @endif>
@@ -173,7 +175,7 @@
                             </td>
                             <td class="px-4 py-3 text-sm">
                                 @if($uEmail !== '')
-                                    <a href="{{ route('analytics.index', ['tab' => 'searches', 'user_email' => $uEmail]) }}" class="text-blue-600 hover:text-blue-800">View searches</a>
+                                    <a href="{{ route($analyticsIndexRoute, ['tab' => 'searches', 'user_email' => $uEmail]) }}" class="text-blue-600 hover:text-blue-800">View searches</a>
                                 @else
                                     <span class="text-gray-400">&mdash;</span>
                                 @endif

@@ -28,7 +28,7 @@
                class="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition whitespace-nowrap">
                 Open metadata explorer
             </a>
-            <a href="{{ route('videos.index') }}"
+            <a href="{{ route('ai-search.videos.index') }}"
                class="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition whitespace-nowrap">
                 Back to Video Library
             </a>
@@ -52,7 +52,7 @@
     @endif
 
     <div class="bg-white rounded-lg shadow-sm p-6">
-        <form method="GET" action="{{ route('videos.search-visible-audio') }}" class="space-y-4">
+        <form method="GET" action="{{ route('ai-search.search-visible-audio') }}" class="space-y-4">
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <div class="lg:col-span-2">
                     <label for="search" class="block text-sm font-medium text-gray-700 mb-1">Search</label>
@@ -91,7 +91,7 @@
                         class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 px-6 rounded-md shadow-sm transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
                     Apply
                 </button>
-                <a href="{{ route('videos.search-visible-audio') }}" class="text-sm text-gray-600 hover:text-gray-900 underline">
+                <a href="{{ route('ai-search.search-visible-audio') }}" class="text-sm text-gray-600 hover:text-gray-900 underline">
                     Clear
                 </a>
             </div>

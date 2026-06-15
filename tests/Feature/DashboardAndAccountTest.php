@@ -10,7 +10,9 @@ class DashboardAndAccountTest extends FeatureTestCase
 
         $this->get(route('dashboard'))
             ->assertOk()
-            ->assertViewIs('dashboard');
+            ->assertViewIs('dashboard')
+            ->assertSee('AI Video Search')
+            ->assertSee('MOW/ROW PWA');
     }
 
     public function test_account_page_renders_for_authenticated_user(): void
@@ -27,7 +29,7 @@ class DashboardAndAccountTest extends FeatureTestCase
     {
         $this->actingAsTenantUser();
 
-        $this->get(route('ai-search.index'))
+        $this->get(route('ai-search.playground.index'))
             ->assertOk()
             ->assertViewIs('ai-search.index');
     }

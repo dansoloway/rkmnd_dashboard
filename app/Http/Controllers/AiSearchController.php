@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\BackendApiService;
+use App\Support\ProductContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -16,26 +17,23 @@ class AiSearchController extends Controller
         'v6_title_tags_long',
         'v6_title_tags_short_long',
         'v6_title_tags_catalog',
+        'mow_row_v6_title_tags',
     ];
 
     public function index()
     {
         $api = $this->getApiService();
         [$namespaces, $defaultNamespace, $namespaceLoadNote] = $this->resolveNamespacesMeta($api);
+        $productId = ProductContext::id();
 
-        return view('ai-search.index', [
-            'namespaces' => $namespaces,
-            'defaultNamespace' => $defaultNamespace,
-            'selectedNamespace' => old('namespace', $defaultNamespace),
-            'prefill' => [
-                'query' => old('query', ''),
-            ],
-            'namespaceLoadNote' => $namespaceLoadNote,
-            'videos' => [],
-            'searchResponse' => null,
-            'searchError' => null,
-            'searchId' => null,
-        ]);
+        return view('ai-search.index', $this->searchViewData(
+            namespaces: $namespaces,
+            defaultNamespace: $defaultNamespace,
+            namespaceLoadNote: $namespaceLoadNote,
+            selectedNamespace: old('namespace', $defaultNamespace),
+            prefillQuery: old('query', ''),
+            productId: $productId,
+        ));
     }
 
     public function search(Request $request)
@@ -56,20 +54,24 @@ class AiSearchController extends Controller
 
         $api = $this->getApiService();
         [$namespaces, $defaultNamespace, $namespaceLoadNote] = $this->resolveNamespacesMeta($api);
+        $productId = ProductContext::id();
 
         $videos = [];
         $searchResponse = null;
         $searchError = null;
         $searchId = null;
+        $selectedNamespace = trim((string) ($validated['namespace'] ?? '')) ?: $defaultNamespace;
 
         try {
             $payload = [
                 'query' => trim($validated['query']),
             ];
-            $ns = isset($validated['namespace']) ? trim((string) $validated['namespace']) : '';
-            $selectedNamespace = ($ns !== '' ? $ns : $defaultNamespace);
-            if ($ns !== '') {
-                $payload['namespace'] = $ns;
+            if ($selectedNamespace !== '') {
+                $payload['namespace'] = $selectedNamespace;
+            }
+            $postType = ProductContext::searchPostType($productId);
+            if ($postType !== null) {
+                $payload['post_type'] = $postType;
             }
 
             $searchResponse = $api->semanticSearchVideos($payload);
@@ -80,24 +82,23 @@ class AiSearchController extends Controller
         } catch (\Exception $e) {
             Log::warning('AI semantic search from dashboard failed', [
                 'message' => $e->getMessage(),
+                'product' => $productId,
             ]);
             $searchError = $e->getMessage();
-            $selectedNamespace = trim((string) ($validated['namespace'] ?? '')) ?: $defaultNamespace;
         }
 
-        return view('ai-search.index', [
-            'namespaces' => $namespaces,
-            'defaultNamespace' => $defaultNamespace,
-            'selectedNamespace' => $selectedNamespace,
-            'prefill' => [
-                'query' => trim($validated['query']),
-            ],
-            'namespaceLoadNote' => $namespaceLoadNote,
-            'videos' => is_array($videos) ? $videos : [],
-            'searchResponse' => $searchResponse,
-            'searchError' => $searchError,
-            'searchId' => $searchId,
-        ]);
+        return view('ai-search.index', $this->searchViewData(
+            namespaces: $namespaces,
+            defaultNamespace: $defaultNamespace,
+            namespaceLoadNote: $namespaceLoadNote,
+            selectedNamespace: $selectedNamespace,
+            prefillQuery: trim($validated['query']),
+            productId: $productId,
+            videos: is_array($videos) ? $videos : [],
+            searchResponse: $searchResponse,
+            searchError: $searchError,
+            searchId: $searchId,
+        ));
     }
 
     public function feedback(Request $request)
@@ -145,6 +146,45 @@ class AiSearchController extends Controller
         }
     }
 
+    /**
+     * @return array<string, mixed>
+     */
+    private function searchViewData(
+        array $namespaces,
+        string $defaultNamespace,
+        ?string $namespaceLoadNote,
+        string $selectedNamespace,
+        string $prefillQuery,
+        string $productId,
+        array $videos = [],
+        ?array $searchResponse = null,
+        ?string $searchError = null,
+        ?string $searchId = null,
+    ): array {
+        $searchRoute = $productId === ProductContext::MOW_ROW
+            ? 'mow-row.search.search'
+            : 'ai-search.playground.search';
+        $feedbackRoute = $productId === ProductContext::MOW_ROW
+            ? 'mow-row.search.feedback'
+            : 'ai-search.playground.feedback';
+
+        return [
+            'namespaces' => $namespaces,
+            'defaultNamespace' => $defaultNamespace,
+            'selectedNamespace' => $selectedNamespace,
+            'prefill' => ['query' => $prefillQuery],
+            'namespaceLoadNote' => $namespaceLoadNote,
+            'videos' => $videos,
+            'searchResponse' => $searchResponse,
+            'searchError' => $searchError,
+            'searchId' => $searchId,
+            'productId' => $productId,
+            'product' => ProductContext::config($productId),
+            'searchFormAction' => route($searchRoute),
+            'feedbackUrl' => route($feedbackRoute),
+        ];
+    }
+
     protected function getApiService(): BackendApiService
     {
         $apiKey = session('tenant_api_key') ?? config('backend.default_api_key');
@@ -157,6 +197,9 @@ class AiSearchController extends Controller
      */
     private function resolveNamespacesMeta(BackendApiService $api): array
     {
+        $productId = ProductContext::id();
+        $productDefault = ProductContext::defaultNamespace($productId);
+
         try {
             $meta = $api->getSearchNamespaces();
             $list = $meta['namespaces'] ?? [];
@@ -164,11 +207,17 @@ class AiSearchController extends Controller
                 $list = [];
             }
             $list = array_values(array_unique(array_filter($list, fn ($n) => is_string($n) && $n !== '')));
+            $list = ProductContext::filterNamespaces($list, $productId);
 
-            $default = is_string($meta['default'] ?? null) ? (string) $meta['default'] : 'v6_title_tags';
+            $default = is_string($meta['default'] ?? null) ? (string) $meta['default'] : $productDefault;
+            if (! in_array($default, $list, true)) {
+                $default = $productDefault;
+            }
 
             if ($list === []) {
-                return [self::FALLBACK_NAMESPACES, $default, 'Namespace list empty from API — using fallback.'];
+                $fallback = ProductContext::filterNamespaces(self::FALLBACK_NAMESPACES, $productId);
+
+                return [$fallback !== [] ? $fallback : [$productDefault], $productDefault, 'Namespace list empty from API — using fallback.'];
             }
 
             $note = null;
@@ -181,7 +230,9 @@ class AiSearchController extends Controller
 
             return [$list, $default, $note];
         } catch (\Exception $e) {
-            return [self::FALLBACK_NAMESPACES, 'v6_title_tags', 'Could not load namespaces from API ('.$e->getMessage().') — using fallback.'];
+            $fallback = ProductContext::filterNamespaces(self::FALLBACK_NAMESPACES, $productId);
+
+            return [$fallback !== [] ? $fallback : [$productDefault], $productDefault, 'Could not load namespaces from API ('.$e->getMessage().') — using fallback.'];
         }
     }
 }

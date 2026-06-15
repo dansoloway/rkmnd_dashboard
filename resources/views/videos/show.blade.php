@@ -1,6 +1,10 @@
 @extends('layouts.app')
 
 @section('content')
+@php
+    $libraryRoute = $libraryRoute ?? 'ai-search.videos.index';
+    $libraryLabel = ($productId ?? 'ai_search') === 'mow_row' ? 'MOW/ROW catalog' : 'Video library';
+@endphp
 <div class="space-y-6">
     <nav class="flex" aria-label="Breadcrumb">
         <ol class="inline-flex items-center space-x-1 md:space-x-3 text-sm">
@@ -8,7 +12,7 @@
             <li>
                 <div class="flex items-center">
                     <svg class="w-5 h-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path></svg>
-                    <a href="{{ route('videos.index') }}" class="ml-1 text-gray-700 hover:text-blue-600">Videos</a>
+                    <a href="{{ route($libraryRoute) }}" class="ml-1 text-gray-700 hover:text-blue-600">{{ $libraryLabel }}</a>
                 </div>
             </li>
             <li aria-current="page">
@@ -78,6 +82,12 @@
                         @if(!empty($video['post_status']))
                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">{{ $video['post_status'] }}</span>
                         @endif
+                        @if(!empty($video['scheduled_content_type']))
+                            @php $sct = strtolower(trim((string) $video['scheduled_content_type'])); @endphp
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $sct === 'move' ? 'bg-green-100 text-green-800' : ($sct === 'weekly' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-700') }}">
+                                {{ $sct === 'move' ? 'Move of the Week' : ($sct === 'weekly' ? 'Rollout of the Week' : $video['scheduled_content_type']) }}
+                            </span>
+                        @endif
                         @if($syncLabel)
                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $syncLabel === 'synced' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-700' }}">{{ $syncLabel }}</span>
                         @endif
@@ -137,6 +147,18 @@
                             <dd class="mt-0.5 text-gray-900 font-mono text-xs break-all">{{ $video['jwp_id'] }}</dd>
                         </div>
                     @endif
+                    @if(!empty($video['scheduled_content_type']))
+                        <div>
+                            <dt class="text-gray-500">Scheduled content type</dt>
+                            <dd class="mt-0.5 text-gray-900">{{ $video['scheduled_content_type'] }}</dd>
+                        </div>
+                    @endif
+                    @if(!empty($video['scheduled_acf']) && is_array($video['scheduled_acf']))
+                        <div class="sm:col-span-2">
+                            <dt class="text-gray-500">Scheduled ACF</dt>
+                            <dd class="mt-0.5 text-gray-900 text-xs font-mono whitespace-pre-wrap">{{ json_encode($video['scheduled_acf'], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</dd>
+                        </div>
+                    @endif
                     @if(!empty($video['body_area']))
                         <div><dt class="text-gray-500">Body area</dt><dd class="mt-0.5 text-gray-900">{{ $video['body_area'] }}</dd></div>
                     @endif
@@ -175,7 +197,7 @@
 
         <div class="space-y-6">
             <div class="bg-white rounded-lg shadow-sm p-6">
-                <a href="{{ route('videos.index') }}" class="block w-full text-center btn-secondary text-sm">← Back to library</a>
+                <a href="{{ route($libraryRoute) }}" class="block w-full text-center btn-secondary text-sm">← Back to {{ $libraryLabel }}</a>
             </div>
 
             <div class="bg-white rounded-lg shadow-sm p-6" id="edit-audio">
@@ -193,7 +215,7 @@
                     >{{ old('source_text', $audioSourceText) }}</textarea>
                     <p class="text-xs text-gray-500">
                         Saves to the pipeline, regenerates the MP3 on S3, and refreshes search metadata when eligible.
-                        <a href="{{ route('videos.search-visible-audio') }}" class="text-blue-600 hover:underline">Bulk audio tool</a>
+                        <a href="{{ route('ai-search.search-visible-audio') }}" class="text-blue-600 hover:underline">Bulk audio tool</a>
                     </p>
                     <button type="submit" class="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition text-sm font-medium">
                         Save and regenerate

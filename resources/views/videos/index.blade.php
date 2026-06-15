@@ -1,10 +1,16 @@
 @extends('layouts.app')
 
 @section('content')
+@php
+    $libraryIndexRoute = ($productId ?? 'ai_search') === 'mow_row' ? 'mow-row.catalog' : 'ai-search.videos.index';
+@endphp
 <div class="space-y-6">
     <!-- Header -->
     <div class="flex justify-between items-center">
         <div>
+            @if(!empty($product['label']))
+                <p class="text-sm text-blue-700 font-medium">{{ $product['label'] }}</p>
+            @endif
             <h1 class="text-3xl font-heading font-bold text-gray-900">Video Library</h1>
             <p class="mt-2 text-gray-600">{{ $total }} videos available</p>
         </div>
@@ -12,7 +18,7 @@
 
     <!-- Filters & Search -->
     <div class="bg-white rounded-lg shadow-sm p-6">
-        <form method="GET" action="{{ route('videos.index') }}" class="space-y-4">
+        <form method="GET" action="{{ route($libraryIndexRoute) }}" class="space-y-4">
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-4">
                 <!-- Search -->
                 <div class="lg:col-span-2">
@@ -113,7 +119,7 @@
                     Apply Filters
                 </button>
                 <a 
-                    href="{{ route('videos.index') }}" 
+                    href="{{ route($libraryIndexRoute) }}" 
                     class="text-sm text-gray-600 hover:text-gray-900 underline"
                 >
                     Clear Filters
@@ -204,13 +210,13 @@
                     <div class="flex items-center gap-2">
                         @if($currentPage > 1)
                             <a 
-                                href="{{ route('videos.index', array_merge(request()->query(), ['offset' => 0])) }}" 
+                                href="{{ route($libraryIndexRoute, array_merge(request()->query(), ['offset' => 0])) }}" 
                                 class="px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 text-sm"
                             >
                                 First
                             </a>
                             <a 
-                                href="{{ route('videos.index', array_merge(request()->query(), ['offset' => ($currentPage - 2) * ($filters['limit'] ?? 24)])) }}" 
+                                href="{{ route($libraryIndexRoute, array_merge(request()->query(), ['offset' => ($currentPage - 2) * ($filters['limit'] ?? 24)])) }}" 
                                 class="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
                             >
                                 Previous
@@ -219,13 +225,13 @@
                         <span class="px-4 py-2 text-gray-600 font-medium">Page {{ $currentPage }} of {{ $totalPages }}</span>
                         @if($currentPage < $totalPages)
                             <a 
-                                href="{{ route('videos.index', array_merge(request()->query(), ['offset' => $currentPage * ($filters['limit'] ?? 24)])) }}" 
+                                href="{{ route($libraryIndexRoute, array_merge(request()->query(), ['offset' => $currentPage * ($filters['limit'] ?? 24)])) }}" 
                                 class="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50"
                             >
                                 Next
                             </a>
                             <a 
-                                href="{{ route('videos.index', array_merge(request()->query(), ['offset' => ($totalPages - 1) * ($filters['limit'] ?? 24)])) }}" 
+                                href="{{ route($libraryIndexRoute, array_merge(request()->query(), ['offset' => ($totalPages - 1) * ($filters['limit'] ?? 24)])) }}" 
                                 class="px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 text-sm"
                             >
                                 Last

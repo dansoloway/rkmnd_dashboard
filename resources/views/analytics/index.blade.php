@@ -7,8 +7,16 @@
 @endsection
 
 @section('content')
+@php
+    $analyticsIndexRoute = $analyticsIndexRoute ?? 'ai-search.analytics';
+    $analyticsSearchRoute = $analyticsSearchRoute ?? 'ai-search.analytics.search';
+    $feedbackUrl = $feedbackUrl ?? route('ai-search.playground.feedback');
+@endphp
 <div class="space-y-6">
     <div>
+        @if(!empty($product['label']))
+            <p class="text-sm text-blue-700 font-medium">{{ $product['label'] }}</p>
+        @endif
         <h1 class="text-3xl font-heading font-bold text-gray-900">Analytics & Usage</h1>
         <p class="mt-2 text-gray-600">Monitor your usage and quota limits</p>
     </div>

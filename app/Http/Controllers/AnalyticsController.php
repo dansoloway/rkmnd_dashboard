@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\BackendApiService;
+use App\Support\ProductContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
@@ -16,7 +17,7 @@ class AnalyticsController extends Controller
         'v6_title_tags_short',
         'v6_title_tags_long',
         'v6_title_tags_short_long',
-        'v6_title_tags_catalog',
+        'mow_row_v6_title_tags',
     ];
 
     protected function getApiService(): BackendApiService
@@ -123,9 +124,13 @@ class AnalyticsController extends Controller
                 'searchFeedbackError' => null,
                 'feedbackDays' => 30,
                 'feedbackSummary' => ['up' => 0, 'down' => 0, 'total' => 0],
-                'namespaces' => self::FALLBACK_NAMESPACES,
-                'defaultNamespace' => 'v6_title_tags',
+                'namespaces' => ProductContext::filterNamespaces(self::FALLBACK_NAMESPACES, ProductContext::id()),
+                'defaultNamespace' => ProductContext::defaultNamespace(),
                 'namespaceLoadNote' => null,
+                'productId' => ProductContext::id(),
+                'product' => ProductContext::config(),
+                'analyticsIndexRoute' => ProductContext::routeName('analytics'),
+                'analyticsSearchRoute' => ProductContext::routeName('analytics.search'),
                 'error' => 'Unable to load analytics data.',
             ], $this->rateSearchDefaults(), $extra));
         }
@@ -243,6 +248,11 @@ class AnalyticsController extends Controller
             'namespaces' => $namespaces,
             'defaultNamespace' => $defaultNamespace,
             'namespaceLoadNote' => $namespaceLoadNote,
+            'productId' => ProductContext::id(),
+            'product' => ProductContext::config(),
+            'analyticsIndexRoute' => ProductContext::routeName('analytics'),
+            'analyticsSearchRoute' => ProductContext::routeName('analytics.search'),
+            'feedbackUrl' => route(ProductContext::id() === ProductContext::MOW_ROW ? 'mow-row.search.feedback' : 'ai-search.playground.feedback'),
             'error' => null,
         ];
     }
@@ -266,9 +276,11 @@ class AnalyticsController extends Controller
      */
     private function rateSearchDefaults(): array
     {
+        $defaultNs = ProductContext::defaultNamespace();
+
         return [
             'rateSearchQuery' => '',
-            'rateSearchNamespace' => 'v6_title_tags',
+            'rateSearchNamespace' => $defaultNs,
             'rateSearchVideos' => [],
             'rateSearchId' => null,
             'rateSearchResponse' => null,
@@ -326,6 +338,9 @@ class AnalyticsController extends Controller
      */
     private function resolveNamespacesMeta(BackendApiService $api): array
     {
+        $productId = ProductContext::id();
+        $productDefault = ProductContext::defaultNamespace($productId);
+
         try {
             $meta = $api->getSearchNamespaces();
             $list = $meta['namespaces'] ?? [];
@@ -333,10 +348,17 @@ class AnalyticsController extends Controller
                 $list = [];
             }
             $list = array_values(array_unique(array_filter($list, fn ($n) => is_string($n) && $n !== '')));
-            $default = is_string($meta['default'] ?? null) ? (string) $meta['default'] : 'v6_title_tags';
+            $list = ProductContext::filterNamespaces($list, $productId);
+
+            $default = is_string($meta['default'] ?? null) ? (string) $meta['default'] : $productDefault;
+            if (! in_array($default, $list, true)) {
+                $default = $productDefault;
+            }
 
             if ($list === []) {
-                return [self::FALLBACK_NAMESPACES, $default, 'Namespace list empty from API — using fallback.'];
+                $fallback = ProductContext::filterNamespaces(self::FALLBACK_NAMESPACES, $productId);
+
+                return [$fallback !== [] ? $fallback : [$productDefault], $productDefault, 'Namespace list empty from API — using fallback.'];
             }
 
             $note = null;
@@ -349,7 +371,9 @@ class AnalyticsController extends Controller
 
             return [$list, $default, $note];
         } catch (\Exception $e) {
-            return [self::FALLBACK_NAMESPACES, 'v6_title_tags', 'Could not load namespaces from API ('.$e->getMessage().') — using fallback.'];
+            $fallback = ProductContext::filterNamespaces(self::FALLBACK_NAMESPACES, $productId);
+
+            return [$fallback !== [] ? $fallback : [$productDefault], $productDefault, 'Could not load namespaces from API ('.$e->getMessage().') — using fallback.'];
         }
     }
 }

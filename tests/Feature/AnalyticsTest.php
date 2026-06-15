@@ -10,7 +10,7 @@ class AnalyticsTest extends FeatureTestCase
     {
         $this->actingAsTenantUser();
 
-        $this->get(route('analytics.index'))
+        $this->get(route('ai-search.analytics'))
             ->assertOk()
             ->assertViewIs('analytics.index')
             ->assertViewHas('analyticsTab', 'overview')
@@ -22,7 +22,7 @@ class AnalyticsTest extends FeatureTestCase
     {
         $this->actingAsTenantUser();
 
-        $this->get(route('analytics.index', ['tab' => 'searches']))
+        $this->get(route('ai-search.analytics', ['tab' => 'searches']))
             ->assertOk()
             ->assertViewHas('analyticsTab', 'searches')
             ->assertSee('Recent Search Queries')
@@ -35,7 +35,7 @@ class AnalyticsTest extends FeatureTestCase
     {
         $this->actingAsTenantUser();
 
-        $this->get(route('analytics.index', ['user_email' => 'jane@example.com']))
+        $this->get(route('ai-search.analytics', ['user_email' => 'jane@example.com']))
             ->assertOk()
             ->assertViewHas('analyticsTab', 'searches')
             ->assertSee('Showing searches for')
@@ -47,7 +47,7 @@ class AnalyticsTest extends FeatureTestCase
     {
         $this->actingAsTenantUser();
 
-        $this->get(route('analytics.index', ['user' => 'jane']))
+        $this->get(route('ai-search.analytics', ['user' => 'jane']))
             ->assertOk()
             ->assertViewHas('analyticsTab', 'searches')
             ->assertSee('Showing searches for')
@@ -58,7 +58,7 @@ class AnalyticsTest extends FeatureTestCase
     {
         $this->actingAsTenantUser();
 
-        $this->get(route('analytics.index', ['tab' => 'feedback']))
+        $this->get(route('ai-search.analytics', ['tab' => 'feedback']))
             ->assertOk()
             ->assertViewHas('analyticsTab', 'feedback')
             ->assertSee('Search feedback')
@@ -73,7 +73,7 @@ class AnalyticsTest extends FeatureTestCase
     {
         $this->actingAsTenantUser();
 
-        $this->get(route('analytics.index', ['tab' => 'feedback', 'feedback_days' => 7]))
+        $this->get(route('ai-search.analytics', ['tab' => 'feedback', 'feedback_days' => 7]))
             ->assertOk()
             ->assertViewHas('feedbackDays', 7);
     }
@@ -82,7 +82,7 @@ class AnalyticsTest extends FeatureTestCase
     {
         $this->actingAsTenantUser();
 
-        $this->post(route('analytics.search'), [
+        $this->post(route('ai-search.analytics.search'), [
             'query' => 'hip mobility',
             'namespace' => 'v6_title_tags',
             'feedback_days' => 30,
@@ -104,7 +104,7 @@ class AnalyticsTest extends FeatureTestCase
             ->timezone(config('app.timezone'))
             ->format('M j, Y g:i A');
 
-        $this->get(route('analytics.index', ['tab' => 'searches']))
+        $this->get(route('ai-search.analytics', ['tab' => 'searches']))
             ->assertOk()
             ->assertSee('shoulder pain')
             ->assertSee('Whole search', false)
@@ -116,7 +116,7 @@ class AnalyticsTest extends FeatureTestCase
     {
         $this->actingAsTenantUser();
 
-        $this->get(route('analytics.index', ['tab' => 'searches']))
+        $this->get(route('ai-search.analytics', ['tab' => 'searches']))
             ->assertOk()
             ->assertSee('Searches by user')
             ->assertSee('Jane Member')
@@ -127,14 +127,14 @@ class AnalyticsTest extends FeatureTestCase
     {
         $this->actingAsTenantUser();
 
-        $this->get(route('analytics.index', ['tab' => 'feedback']))
+        $this->get(route('ai-search.analytics', ['tab' => 'feedback']))
             ->assertOk()
             ->assertSee('By search query')
             ->assertSee('hip mobility for runners')
             ->assertSee('Distinct queries')
             ->assertSee('All namespaces');
 
-        $this->get(route('analytics.index', ['tab' => 'feedback', 'feedback_tab' => 'detail']))
+        $this->get(route('ai-search.analytics', ['tab' => 'feedback', 'feedback_tab' => 'detail']))
             ->assertOk()
             ->assertSee(route('videos.show', 81), false)
             ->assertSee('Hip Mobility Flow');
@@ -144,7 +144,7 @@ class AnalyticsTest extends FeatureTestCase
     {
         $this->actingAsTenantUser();
 
-        $this->get(route('analytics.index', [
+        $this->get(route('ai-search.analytics', [
             'tab' => 'feedback',
             'feedback_namespace' => 'v6_title_tags',
             'feedback_tab' => 'overview',
@@ -160,7 +160,7 @@ class AnalyticsTest extends FeatureTestCase
     {
         $this->actingAsTenantUser();
 
-        $this->get(route('analytics.index', ['user_email' => 'jane@example.com']))
+        $this->get(route('ai-search.analytics', ['user_email' => 'jane@example.com']))
             ->assertOk()
             ->assertSee('tab=overview', false)
             ->assertSee('tab=searches', false)
@@ -171,7 +171,7 @@ class AnalyticsTest extends FeatureTestCase
     {
         $this->actingAsTenantUser();
 
-        $this->get(route('analytics.index', ['tab' => 'searches']))
+        $this->get(route('ai-search.analytics', ['tab' => 'searches']))
             ->assertOk()
             ->assertSee('tab=searches', false)
             ->assertSee('user_email=jane', false);

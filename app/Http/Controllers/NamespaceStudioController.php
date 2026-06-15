@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\EmbeddingReconcileSnapshot;
 use App\Services\BackendApiService;
+use App\Support\ProductContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -40,7 +41,13 @@ class NamespaceStudioController extends Controller
      */
     private function resolveNamespaces(BackendApiService $api): array
     {
-        $fallback = array_keys(self::NAMESPACE_META);
+        $productId = ProductContext::id();
+        $productDefault = ProductContext::defaultNamespace($productId);
+        $fallback = ProductContext::filterNamespaces(array_keys(self::NAMESPACE_META), $productId);
+        if ($fallback === []) {
+            $fallback = [$productDefault];
+        }
+
         try {
             $meta = $api->getSearchNamespaces();
             $list = $meta['namespaces'] ?? [];
@@ -48,7 +55,12 @@ class NamespaceStudioController extends Controller
                 $list = [];
             }
             $list = array_values(array_unique(array_filter($list, fn ($n) => is_string($n) && $n !== '')));
-            $default = is_string($meta['default'] ?? null) ? (string) $meta['default'] : 'v6_title_tags';
+            $list = ProductContext::filterNamespaces($list, $productId);
+
+            $default = is_string($meta['default'] ?? null) ? (string) $meta['default'] : $productDefault;
+            if (! in_array($default, $list, true)) {
+                $default = $productDefault;
+            }
 
             if ($list === []) {
                 return [$fallback, $default, 'Namespace list empty from API — using fallback list.'];
@@ -64,16 +76,23 @@ class NamespaceStudioController extends Controller
 
             return [$list, $default, $note];
         } catch (\Exception $e) {
-            return [$fallback, 'v6_title_tags', 'Could not load namespaces: '.$e->getMessage()];
+            return [$fallback, $productDefault, 'Could not load namespaces: '.$e->getMessage()];
         }
     }
 
     public function index(Request $request): View
     {
         $api = $this->getApiService();
+        $productId = ProductContext::id();
         [$namespaces, $defaultNs, $namespaceNote] = $this->resolveNamespaces($api);
 
         $namespace = trim((string) $request->input('namespace', ''));
+        if ($namespace === '' && count($namespaces) === 1) {
+            $namespace = $namespaces[0];
+        }
+        if ($namespace === '' && $productId === ProductContext::MOW_ROW) {
+            $namespace = $defaultNs;
+        }
         if ($namespace !== '' && ! in_array($namespace, $namespaces, true)) {
             $namespace = '';
         }
@@ -173,6 +192,15 @@ class NamespaceStudioController extends Controller
             'hasNamespace' => $hasNamespace,
             'defaultNamespace' => $defaultNs,
             'namespaceNote' => $namespaceNote,
+            'productId' => $productId,
+            'product' => ProductContext::config($productId),
+            'libraryRoute' => ProductContext::libraryRoute($productId),
+            'studioRoutes' => [
+                'reconcile' => route(ProductContext::routeName('namespace-studio.reconcile')),
+                'fixUpsert' => route(ProductContext::routeName('namespace-studio.fix-upsert')),
+                'fixDelete' => route(ProductContext::routeName('namespace-studio.fix-delete')),
+                'index' => route(ProductContext::routeName('namespace-studio')),
+            ],
             'namespaceDefinition' => $hasNamespace
                 ? $this->formatNamespaceDefinition($namespace, $nsMeta)
                 : 'Select a namespace above to see its definition, reconcile snapshot, and catalog rows for that embedding scheme.',

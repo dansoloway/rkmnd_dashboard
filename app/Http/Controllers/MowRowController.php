@@ -1,0 +1,103 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Services\BackendApiService;
+use App\Support\ProductContext;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Illuminate\View\View;
+
+class MowRowController extends Controller
+{
+    protected function getApiService(): BackendApiService
+    {
+        $apiKey = session('tenant_api_key') ?? config('backend.default_api_key');
+
+        return new BackendApiService($apiKey);
+    }
+
+    public function catalog(Request $request): View
+    {
+        try {
+            $api = $this->getApiService();
+
+            $filters = array_merge(ProductContext::catalogFilters(ProductContext::MOW_ROW), [
+                'limit' => (int) $request->input('limit', 50),
+                'offset' => (int) $request->input('offset', 0),
+                'sort_by' => $request->input('sort_by', 'wp_created'),
+                'sort_order' => $request->input('sort_order', 'desc'),
+            ]);
+
+            if ($request->filled('search')) {
+                $filters['search'] = $request->input('search');
+            }
+
+            $filters = array_filter($filters, fn ($v) => $v !== null && $v !== '');
+
+            $response = $api->getVideos($filters);
+            $videos = $response['videos'] ?? (is_array($response) && ! isset($response['total']) ? $response : []);
+            $total = (int) ($response['total'] ?? count($videos));
+
+            $contentType = trim((string) $request->input('content_type', ''));
+            if ($contentType !== '' && in_array($contentType, ['move', 'weekly'], true)) {
+                $videos = array_values(array_filter($videos, function (array $v) use ($contentType) {
+                    return strtolower(trim((string) ($v['scheduled_content_type'] ?? ''))) === $contentType;
+                }));
+            }
+
+            $perPage = (int) ($filters['limit'] ?? 50);
+            $offset = (int) ($filters['offset'] ?? 0);
+            $currentPage = $perPage > 0 ? (int) floor($offset / $perPage) + 1 : 1;
+            $totalPages = $perPage > 0 ? (int) max(1, ceil($total / $perPage)) : 1;
+
+            return view('mow-row.catalog', [
+                'videos' => $videos,
+                'total' => $total,
+                'currentPage' => $currentPage,
+                'totalPages' => $totalPages,
+                'filters' => [
+                    'search' => $request->input('search', ''),
+                    'content_type' => $contentType,
+                    'sort_by' => $filters['sort_by'] ?? 'wp_created',
+                    'sort_order' => $filters['sort_order'] ?? 'desc',
+                    'limit' => $perPage,
+                    'offset' => $offset,
+                ],
+                'product' => ProductContext::config(ProductContext::MOW_ROW),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('MOW/ROW catalog load failed', ['error' => $e->getMessage()]);
+
+            return view('mow-row.catalog', [
+                'videos' => [],
+                'total' => 0,
+                'currentPage' => 1,
+                'totalPages' => 1,
+                'filters' => [],
+                'product' => ProductContext::config(ProductContext::MOW_ROW),
+                'error' => 'Unable to load MOW/ROW catalog. Please try again later.',
+            ]);
+        }
+    }
+
+    public function featured(): View
+    {
+        $featured = ['move' => null, 'weekly' => null, 'as_of' => null];
+        $error = null;
+
+        try {
+            $api = $this->getApiService();
+            $featured = $api->getMowRowFeaturedWeekly();
+        } catch (\Exception $e) {
+            Log::warning('MOW/ROW featured weekly load failed', ['error' => $e->getMessage()]);
+            $error = $e->getMessage();
+        }
+
+        return view('mow-row.featured', [
+            'featured' => $featured,
+            'product' => ProductContext::config(ProductContext::MOW_ROW),
+            'error' => $error,
+        ]);
+    }
+}

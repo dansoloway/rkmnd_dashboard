@@ -14,7 +14,7 @@ class VideosTest extends FeatureTestCase
     {
         $this->actingAsTenantUser();
 
-        $this->get(route('videos.index'))
+        $this->get(route('ai-search.videos.index'))
             ->assertOk()
             ->assertViewIs('videos.index')
             ->assertSee('Test Video One');

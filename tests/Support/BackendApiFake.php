@@ -73,8 +73,18 @@ class BackendApiFake
                 return Http::response(self::videoDetailPayload());
             }
 
+            if (str_contains($path, '/api/v1/mow-row/featured-weekly')) {
+                return Http::response(self::mowRowFeaturedWeeklyPayload());
+            }
+
             if (str_contains($path, '/api/v1/wordpress/videos')) {
-                return Http::response(self::videosListPayload());
+                $queryString = parse_url($request->url(), PHP_URL_QUERY);
+                $qs = [];
+                if (is_string($queryString) && $queryString !== '') {
+                    parse_str($queryString, $qs);
+                }
+
+                return Http::response(self::videosListPayload($qs));
             }
 
             if (str_contains($path, '/api/v1/wordpress/stats')) {
@@ -172,16 +182,71 @@ class BackendApiFake
     public static function namespacesPayload(): array
     {
         return [
-            'namespaces' => ['v6_title_tags', 'v6_title_only', 'v7'],
+            'namespaces' => ['v6_title_tags', 'v6_title_only', 'mow_row_v6_title_tags', 'v7'],
             'default' => 'v6_title_tags',
         ];
     }
 
     /**
+     * @param  array<string, mixed>  $query
      * @return array<string, mixed>
      */
-    public static function videosListPayload(): array
+    public static function videosListPayload(array $query = []): array
     {
+        $embeddingNs = is_string($query['embedding_namespace'] ?? null) ? $query['embedding_namespace'] : null;
+        $postType = is_string($query['post_type'] ?? null) ? $query['post_type'] : null;
+
+        if ($embeddingNs === 'mow_row_v6_title_tags' || $postType === 'scheduled') {
+            return [
+                'videos' => [
+                    [
+                        'id' => 10,
+                        'wp_post_id' => 200,
+                        'jwp_id' => 'jwp-mow',
+                        'title' => 'MOW Hip Flow',
+                        'scheduled_content_type' => 'move',
+                        'post_type' => 'scheduled',
+                        'embedding_namespaces' => 'mow_row_v6_title_tags',
+                        'sync_status' => 'completed',
+                    ],
+                    [
+                        'id' => 11,
+                        'wp_post_id' => 201,
+                        'jwp_id' => 'jwp-row',
+                        'title' => 'ROW Shoulder Reset',
+                        'scheduled_content_type' => 'weekly',
+                        'post_type' => 'scheduled',
+                        'embedding_namespaces' => 'mow_row_v6_title_tags',
+                        'sync_status' => 'completed',
+                    ],
+                ],
+                'total' => 2,
+            ];
+        }
+
+        if ($postType === 'video' || isset($query['in_ai_search_index'])) {
+            return [
+                'videos' => [
+                    [
+                        'id' => 1,
+                        'wp_post_id' => 100,
+                        'jwp_id' => 'jwp-abc',
+                        'title' => 'Test Video One',
+                        'thumbnail_url' => 'https://example.com/thumb1.jpg',
+                        'audio_preview_url' => 'https://example.com/audio1.mp3',
+                        'embedding_namespaces' => 'v6_title_tags',
+                        'post_type' => 'video',
+                        'sync_status' => 'completed',
+                        'created_at' => now()->toIso8601String(),
+                        'updated_at' => now()->toIso8601String(),
+                        'has_embedding' => true,
+                        'has_audio_preview' => true,
+                    ],
+                ],
+                'total' => 42,
+            ];
+        }
+
         return [
             'videos' => [
                 [
@@ -213,6 +278,28 @@ class BackendApiFake
                 ],
             ],
             'total' => 2,
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public static function mowRowFeaturedWeeklyPayload(): array
+    {
+        return [
+            'move' => [
+                'title' => 'Featured Move Week',
+                'wp_post_id' => 200,
+                'run_time' => '12:00',
+                'thumbnail_url' => 'https://example.com/mow.jpg',
+            ],
+            'weekly' => [
+                'title' => 'Featured Rollout Week',
+                'wp_post_id' => 201,
+                'run_time' => '8:30',
+                'thumbnail_url' => 'https://example.com/row.jpg',
+            ],
+            'as_of' => now()->toIso8601String(),
         ];
     }
 

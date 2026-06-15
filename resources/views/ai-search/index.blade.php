@@ -3,13 +3,18 @@
 @section('content')
 @php
     $prefill = $prefill ?? ['query' => ''];
+    $searchFormAction = $searchFormAction ?? route('ai-search.playground.search');
+    $feedbackUrl = $feedbackUrl ?? route('ai-search.playground.feedback');
 @endphp
 
 <div class="space-y-6 max-w-5xl mx-auto">
     <div>
-        <h1 class="text-3xl font-heading font-bold text-gray-900">AI Search</h1>
+        @if(!empty($product['label']))
+            <p class="text-sm text-blue-700 font-medium">{{ $product['label'] }}</p>
+        @endif
+        <h1 class="text-3xl font-heading font-bold text-gray-900">Semantic search</h1>
         <p class="mt-2 text-gray-600">
-            Same backend as the WordPress AI search: <code class="bg-gray-100 px-1 rounded text-sm">POST /api/v1/search</code>
+            Same backend as the consumer app: <code class="bg-gray-100 px-1 rounded text-sm">POST /api/v1/search</code>
             using your tenant API key. Pick an embedding namespace to control which Pinecone vectors are queried.
         </p>
         @if(!empty($namespaceLoadNote))
@@ -22,7 +27,7 @@
     @endif
 
     <div class="bg-white rounded-lg shadow-sm p-6">
-        <form method="POST" action="{{ route('ai-search.search') }}" class="space-y-4">
+        <form method="POST" action="{{ $searchFormAction }}" class="space-y-4">
             @csrf
 
             <div>
@@ -76,7 +81,7 @@
             @if(!empty($searchId))
                 x-data="searchFeedbackPanel({
                     searchId: @js($searchId),
-                    feedbackUrl: @js(route('ai-search.feedback')),
+                    feedbackUrl: @js($feedbackUrl),
                     csrf: @js(csrf_token()),
                     source: 'dashboard',
                 })"

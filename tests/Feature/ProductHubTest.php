@@ -1,0 +1,91 @@
+<?php
+
+namespace Tests\Feature;
+
+use Illuminate\Support\Facades\Http;
+
+class ProductHubTest extends FeatureTestCase
+{
+    public function test_dashboard_renders_product_hub_cards(): void
+    {
+        $this->actingAsTenantUser();
+
+        $this->get(route('dashboard'))
+            ->assertOk()
+            ->assertViewIs('dashboard')
+            ->assertSee('AI Video Search')
+            ->assertSee('MOW/ROW PWA')
+            ->assertSee('Platform — WordPress sync')
+            ->assertSee('Featured Move Week')
+            ->assertSee('Featured Rollout Week');
+    }
+
+    public function test_mow_row_catalog_lists_namespace_videos(): void
+    {
+        $this->actingAsTenantUser();
+
+        $this->get(route('mow-row.catalog'))
+            ->assertOk()
+            ->assertViewIs('mow-row.catalog')
+            ->assertSee('MOW Hip Flow')
+            ->assertSee('ROW Shoulder Reset')
+            ->assertSee('mow_row_v6_title_tags');
+    }
+
+    public function test_mow_row_catalog_filters_move_vs_weekly_client_side(): void
+    {
+        $this->actingAsTenantUser();
+
+        $this->get(route('mow-row.catalog', ['content_type' => 'move']))
+            ->assertOk()
+            ->assertSee('MOW Hip Flow')
+            ->assertDontSee('ROW Shoulder Reset');
+    }
+
+    public function test_mow_row_featured_page_renders(): void
+    {
+        $this->actingAsTenantUser();
+
+        $this->get(route('mow-row.featured'))
+            ->assertOk()
+            ->assertViewIs('mow-row.featured')
+            ->assertSee('Featured Move Week')
+            ->assertSee('Featured Rollout Week');
+    }
+
+    public function test_legacy_video_library_redirects_to_ai_search(): void
+    {
+        $this->actingAsTenantUser();
+
+        $this->get(route('videos.index'))
+            ->assertRedirect('/ai-search/videos');
+    }
+
+    public function test_mow_row_search_uses_mow_row_namespace_default(): void
+    {
+        $this->actingAsTenantUser();
+
+        $this->get(route('mow-row.search.index'))
+            ->assertOk()
+            ->assertViewIs('ai-search.index')
+            ->assertSee('MOW/ROW PWA')
+            ->assertSee('mow_row_v6_title_tags', false);
+    }
+
+    public function test_dashboard_catalog_api_uses_product_filters(): void
+    {
+        $this->actingAsTenantUser();
+
+        $this->get(route('dashboard'))->assertOk();
+
+        Http::assertSent(function ($request) {
+            if (! str_contains($request->url(), '/api/v1/wordpress/videos')) {
+                return false;
+            }
+            parse_str(parse_url($request->url(), PHP_URL_QUERY) ?? '', $qs);
+
+            return ($qs['post_type'] ?? null) === 'video'
+                || ($qs['embedding_namespace'] ?? null) === 'mow_row_v6_title_tags';
+        });
+    }
+}

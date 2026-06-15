@@ -9,7 +9,14 @@
 
 ## 🎯 Project Overview
 
-This Laravel application provides a beautiful, user-friendly interface for TuneUp Fitness tenants to:
+This Laravel application provides a white-labeled tenant dashboard organized around **two products**:
+
+- **AI Video Search** (WordPress `page-video-ai.php`, namespace `v6_title_tags`)
+- **MOW/ROW PWA** (`mowrow.fitform100.net`, namespace `mow_row_v6_title_tags`)
+
+Shared WordPress sync feeds both. The home page (`/dashboard`) is a product hub with cards and platform sync tools.
+
+Tenants can:
 - Browse and search their video library
 - Run **semantic search** against the same API as WordPress (`POST /api/v1/search`)
 - Rate search results with **thumbs up/down** and review feedback on **Analytics**
@@ -107,13 +114,15 @@ Visit: `http://localhost:8000`
 
 | Page | Route | Notes |
 |------|-------|--------|
-| Semantic search | `/ai-search` | Playground; 👍/👎 per result or whole query when empty |
-| Analytics | `/analytics` | **Search feedback** table + 7/30/90-day filter |
-| API proxy | `POST /ai-search/feedback` | Forwards to pipeline `POST /api/v1/search/feedback` |
+| Product hub | `/dashboard` | AI Search + MOW/ROW cards, sync status |
+| AI semantic search | `/ai-search/playground` | Playground; 👍/👎 per result |
+| MOW/ROW catalog | `/mow-row/catalog` | Videos in `mow_row_v6_title_tags` |
+| Analytics | `/ai-search/analytics` | Search feedback + usage |
+| API proxy | `POST /ai-search/playground/feedback` | Forwards to pipeline `POST /api/v1/search/feedback` |
 
 **Backend service:** `App\Services\BackendApiService::semanticSearchVideos()`, `submitSearchFeedback()`, `getSearchFeedback()`.
 
-**Tests:** `tests/Feature/AiSearchTest.php`, `tests/Feature/AnalyticsTest.php`.
+**Tests:** `tests/Feature/ProductHubTest.php`, `tests/Feature/AiSearchTest.php`, `tests/Feature/AnalyticsTest.php`.
 
 WordPress `page-video-ai.php` does not collect feedback yet.
 
