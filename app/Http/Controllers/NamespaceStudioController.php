@@ -396,6 +396,7 @@ class NamespaceStudioController extends Controller
             'v6_title_tags' => $detail['computed_v6_embedding_text'] ?? null,
             'v6_title_tags_catalog' => $detail['computed_v6_catalog_embedding_text'] ?? null,
             'v7' => $detail['computed_v7_embedding_text'] ?? null,
+            'mow_row_v6_title_tags' => $detail['computed_mow_row_embedding_text'] ?? null,
         ];
 
         if (isset($map[$namespace])) {

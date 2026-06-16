@@ -441,7 +441,24 @@ class VideoController extends Controller
             if (! is_array($computedV6EmbeddingFields)) {
                 $computedV6EmbeddingFields = [];
             }
+
             $video = $response['video'] ?? $response;
+
+            $productId = ProductContext::inferFromVideo(is_array($video) ? $video : []);
+            $requestProduct = $request->query('product');
+            if (is_string($requestProduct) && ProductContext::exists($requestProduct)) {
+                $productId = $requestProduct;
+            }
+
+            $productDefaultNs = ProductContext::defaultNamespace($productId);
+            if ($productDefaultNs === 'mow_row_v6_title_tags') {
+                $computedV6EmbeddingText = $response['computed_mow_row_embedding_text'] ?? $computedV6EmbeddingText;
+                $computedV6EmbeddingFields = $response['computed_mow_row_embedding_fields'] ?? $computedV6EmbeddingFields;
+                if (! is_array($computedV6EmbeddingFields)) {
+                    $computedV6EmbeddingFields = [];
+                }
+            }
+
             $embeddings = $response['embeddings'] ?? [];
             if (is_array($embeddings) && count($embeddings) > 1) {
                 usort($embeddings, function ($a, $b) use ($defaultSearchNamespace) {
@@ -486,12 +503,6 @@ class VideoController extends Controller
                 $audioPreview = $audioPreviews[0];
                 // Use the s3_url directly (bucket is public)
                 $audioUrl = $audioPreview['s3_url'] ?? null;
-            }
-
-            $productId = ProductContext::inferFromVideo(is_array($video) ? $video : []);
-            $requestProduct = $request->query('product');
-            if (is_string($requestProduct) && ProductContext::exists($requestProduct)) {
-                $productId = $requestProduct;
             }
 
             return view('videos.show', array_merge(compact(
