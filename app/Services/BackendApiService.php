@@ -469,6 +469,40 @@ class BackendApiService
     }
 
     /**
+     * Set MOW/ROW content pillar override (move | roll | breathe). Re-indexes mow_row_v6_title_tags.
+     *
+     * @return array<string, mixed>
+     */
+    public function updateMowRowContentPillar(int $videoId, string $pillar): array
+    {
+        $response = Http::timeout(max($this->timeout, 120))
+            ->withToken($this->apiKey)
+            ->asJson()
+            ->patch($this->baseUrl . "/api/v1/wordpress/videos/{$videoId}", [
+                'mow_row_content_pillar' => $pillar,
+            ]);
+
+        if ($response->successful()) {
+            return $response->json();
+        }
+
+        $body = $response->json();
+        $detail = $body['detail'] ?? $response->body();
+        if (is_array($detail)) {
+            $detail = json_encode($detail);
+        }
+
+        Log::error('Backend API: update MOW/ROW content pillar failed', [
+            'video_id' => $videoId,
+            'pillar' => $pillar,
+            'status' => $response->status(),
+            'body' => $response->body(),
+        ]);
+
+        throw new Exception("API request failed: {$response->status()} — {$detail}");
+    }
+
+    /**
      * Regenerate audio preview from edited script (ElevenLabs → S3 → DB → v6 Pinecone when eligible).
      *
      * @return array<string, mixed>

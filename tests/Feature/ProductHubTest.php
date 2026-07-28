@@ -29,17 +29,47 @@ class ProductHubTest extends FeatureTestCase
             ->assertViewIs('mow-row.catalog')
             ->assertSee('MOW Hip Flow')
             ->assertSee('ROW Shoulder Reset')
-            ->assertSee('mow_row_v6_title_tags');
+            ->assertSee('BBB Breath Practice')
+            ->assertSee('mow_row_v6_title_tags')
+            ->assertSee('mow-row-pillar-select', false)
+            ->assertSee('>Roll</option>', false)
+            ->assertSee('mow-row-preview-toggle', false)
+            ->assertSee('Expand all app previews')
+            ->assertSee('Opens the hips for better gait.', false)
+            ->assertSee('Calm the nervous system with diaphragmatic breathing.', false)
+            ->assertDontSee('Rollout', false);
     }
 
-    public function test_mow_row_catalog_filters_move_vs_weekly_client_side(): void
+    public function test_mow_row_catalog_filters_move_vs_roll_client_side(): void
     {
         $this->actingAsTenantUser();
 
         $this->get(route('mow-row.catalog', ['content_type' => 'move']))
             ->assertOk()
             ->assertSee('MOW Hip Flow')
-            ->assertDontSee('ROW Shoulder Reset');
+            ->assertDontSee('ROW Shoulder Reset')
+            ->assertDontSee('BBB Breath Practice');
+    }
+
+    public function test_mow_row_catalog_filters_breathe(): void
+    {
+        $this->actingAsTenantUser();
+
+        $this->get(route('mow-row.catalog', ['content_type' => 'breathe']))
+            ->assertOk()
+            ->assertSee('BBB Breath Practice')
+            ->assertDontSee('MOW Hip Flow');
+    }
+
+    public function test_mow_row_catalog_content_pillar_patch(): void
+    {
+        $this->actingAsTenantUser();
+
+        $this->patchJson(route('mow-row.catalog.content-pillar', ['id' => 10]), [
+            'mow_row_content_pillar' => 'roll',
+        ])
+            ->assertOk()
+            ->assertJsonPath('video.content_pillar', 'roll');
     }
 
     public function test_mow_row_featured_page_renders(): void

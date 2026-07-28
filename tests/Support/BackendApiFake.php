@@ -69,6 +69,22 @@ class BackendApiFake
                 return Http::response([]);
             }
 
+            if (preg_match('#/api/v1/wordpress/videos/\d+$#', $path) && $request->method() === 'PATCH') {
+                $body = json_decode($request->body(), true) ?? [];
+
+                return Http::response([
+                    'status' => 'success',
+                    'message' => 'Video updated',
+                    'video' => [
+                        'id' => (int) preg_replace('#\D+#', '', $path),
+                        'mow_row_content_pillar' => $body['mow_row_content_pillar'] ?? null,
+                        'content_pillar' => $body['mow_row_content_pillar'] ?? 'move',
+                        'content_label' => ucfirst((string) ($body['mow_row_content_pillar'] ?? 'move')),
+                    ],
+                    'mow_row_reindexed' => true,
+                ]);
+            }
+
             if (preg_match('#/api/v1/wordpress/videos/\d+$#', $path)) {
                 return Http::response(self::videoDetailPayload());
             }
@@ -206,6 +222,17 @@ class BackendApiFake
                         'title' => 'MOW Hip Flow',
                         'scheduled_content_type' => 'move',
                         'post_type' => 'scheduled',
+                        'content_pillar' => 'move',
+                        'content_label' => 'Move',
+                        'run_time' => '00:12:30',
+                        'long_description' => 'A guided hip mobility flow.',
+                        'scheduled_acf' => [
+                            'scheduled_content_type' => 'move',
+                            'move' => [
+                                'move_type' => 'Mobility',
+                                'therapeutic_application' => 'Opens the hips for better gait',
+                            ],
+                        ],
                         'embedding_namespaces' => 'mow_row_v6_title_tags',
                         'sync_status' => 'completed',
                     ],
@@ -216,11 +243,38 @@ class BackendApiFake
                         'title' => 'ROW Shoulder Reset',
                         'scheduled_content_type' => 'weekly',
                         'post_type' => 'scheduled',
+                        'content_pillar' => 'roll',
+                        'content_label' => 'Roll',
+                        'run_time' => '00:08:00',
+                        'scheduled_acf' => [
+                            'scheduled_content_type' => 'weekly',
+                            'weekly' => [
+                                'techniques' => 'Cross-fiber',
+                                'therapeutic_application' => 'Releases shoulder tension',
+                            ],
+                        ],
+                        'embedding_namespaces' => 'mow_row_v6_title_tags',
+                        'sync_status' => 'completed',
+                    ],
+                    [
+                        'id' => 12,
+                        'wp_post_id' => 202,
+                        'jwp_id' => 'jwp-breathe',
+                        'title' => 'BBB Breath Practice',
+                        'scheduled_content_type' => '',
+                        'post_type' => 'video',
+                        'video_category' => 'Body By Breath',
+                        'content_pillar' => 'breathe',
+                        'content_label' => 'Breathe',
+                        'short_description' => 'Calm the nervous system with diaphragmatic breathing.',
+                        'instructor' => 'Jill Miller',
+                        'body_area' => 'Core',
+                        'helps_with' => 'Stress Reduction',
                         'embedding_namespaces' => 'mow_row_v6_title_tags',
                         'sync_status' => 'completed',
                     ],
                 ],
-                'total' => 2,
+                'total' => 3,
             ];
         }
 

@@ -45,6 +45,9 @@ Route::middleware(['auth'])->group(function () {
     // --- MOW/ROW PWA product ---
     Route::prefix('mow-row')->name('mow-row.')->group(function () {
         Route::get('/catalog', [MowRowController::class, 'catalog'])->name('catalog');
+        Route::patch('/catalog/videos/{id}/content-pillar', [MowRowController::class, 'updateContentPillar'])
+            ->whereNumber('id')
+            ->name('catalog.content-pillar');
         Route::get('/featured', [MowRowController::class, 'featured'])->name('featured');
         Route::get('/namespace-studio', [NamespaceStudioController::class, 'index'])->name('namespace-studio');
         Route::post('/namespace-studio/reconcile', [NamespaceStudioController::class, 'reconcile'])->name('namespace-studio.reconcile');

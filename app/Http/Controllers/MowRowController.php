@@ -4,12 +4,42 @@ namespace App\Http\Controllers;
 
 use App\Services\BackendApiService;
 use App\Support\ProductContext;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 
 class MowRowController extends Controller
 {
+    private const CATALOG_FIELDS = [
+        'id',
+        'wp_post_id',
+        'jwp_id',
+        'title',
+        'post_type',
+        'post_status',
+        'scheduled_content_type',
+        'scheduled_acf',
+        'mbr_pwa',
+        'mbr_related_products',
+        'mbr_props',
+        'video_category',
+        'mow_row_content_pillar',
+        'content_label',
+        'content_pillar',
+        'instructor',
+        'body_area',
+        'helps_with',
+        'props',
+        'content_tags',
+        'video_topic',
+        'short_description',
+        'long_description',
+        'run_time',
+        'video_time',
+        'embedding_namespaces',
+    ];
+
     protected function getApiService(): BackendApiService
     {
         $apiKey = session('tenant_api_key') ?? config('backend.default_api_key');
@@ -27,6 +57,7 @@ class MowRowController extends Controller
                 'offset' => (int) $request->input('offset', 0),
                 'sort_by' => $request->input('sort_by', 'wp_created'),
                 'sort_order' => $request->input('sort_order', 'desc'),
+                'fields' => implode(',', self::CATALOG_FIELDS),
             ]);
 
             if ($request->filled('search')) {
@@ -40,9 +71,25 @@ class MowRowController extends Controller
             $total = (int) ($response['total'] ?? count($videos));
 
             $contentType = trim((string) $request->input('content_type', ''));
-            if ($contentType !== '' && in_array($contentType, ['move', 'weekly'], true)) {
-                $videos = array_values(array_filter($videos, function (array $v) use ($contentType) {
-                    return strtolower(trim((string) ($v['scheduled_content_type'] ?? ''))) === $contentType;
+            if ($contentType !== '' && in_array($contentType, ['move', 'roll', 'breathe', 'weekly'], true)) {
+                $filterPillar = $contentType === 'weekly' ? 'roll' : $contentType;
+                $videos = array_values(array_filter($videos, function (array $v) use ($filterPillar) {
+                    $pillar = strtolower(trim((string) ($v['content_pillar'] ?? '')));
+                    if ($pillar !== '') {
+                        return $pillar === $filterPillar;
+                    }
+                    $sct = strtolower(trim((string) ($v['scheduled_content_type'] ?? '')));
+                    if ($filterPillar === 'move') {
+                        return $sct === 'move';
+                    }
+                    if ($filterPillar === 'roll') {
+                        return $sct === 'weekly';
+                    }
+                    if ($filterPillar === 'breathe') {
+                        return ($v['post_type'] ?? '') === 'video';
+                    }
+
+                    return false;
                 }));
             }
 
@@ -78,6 +125,30 @@ class MowRowController extends Controller
                 'product' => ProductContext::config(ProductContext::MOW_ROW),
                 'error' => 'Unable to load MOW/ROW catalog. Please try again later.',
             ]);
+        }
+    }
+
+    public function updateContentPillar(Request $request, int $id): JsonResponse
+    {
+        $validated = $request->validate([
+            'mow_row_content_pillar' => 'required|in:move,roll,breathe',
+        ]);
+
+        try {
+            $api = $this->getApiService();
+            $result = $api->updateMowRowContentPillar($id, $validated['mow_row_content_pillar']);
+
+            return response()->json($result);
+        } catch (\Exception $e) {
+            Log::error('MOW/ROW content pillar update failed', [
+                'video_id' => $id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'status' => 'error',
+                'message' => $e->getMessage(),
+            ], 422);
         }
     }
 
