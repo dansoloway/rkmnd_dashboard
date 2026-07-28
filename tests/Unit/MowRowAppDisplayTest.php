@@ -42,8 +42,9 @@ class MowRowAppDisplayTest extends TestCase
         ]);
 
         $this->assertSame('Calm the nervous system.', $sections['card'][2]['value']);
-        $this->assertSame('Jill Miller', $sections['details'][0]['value']);
+        $this->assertSame('Core', $sections['details'][0]['value']);
         $this->assertSame('From the Book: Body By Breath', $sections['details'][count($sections['details']) - 1]['value']);
+        $this->assertNotContains('Jill Miller', array_column($sections['details'], 'value'));
     }
 
     public function test_breathe_video_prefers_mbr_pwa_fields(): void
@@ -72,7 +73,8 @@ class MowRowAppDisplayTest extends TestCase
         }
 
         $this->assertSame('Voice', $byLabel['Focus area'] ?? null);
-        $this->assertSame('89', $byLabel['Book location'] ?? null);
+        $this->assertArrayNotHasKey('Book location', $byLabel);
+        $this->assertSame('From the Book: Body By Breath, p. 89', $sections['details'][count($sections['details']) - 1]['value']);
         $this->assertSame('Bolster', $byLabel['Props'] ?? null);
         $this->assertSame('coregeous_ball', $byLabel['Related products'] ?? null);
         $this->assertNotContains('Massage ball', array_column($sections['details'], 'value'));

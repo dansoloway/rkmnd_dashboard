@@ -285,7 +285,6 @@ class MowRowAppDisplay
         if (is_array($mbr)) {
             foreach ([
                 'focus_area' => 'Focus area',
-                'book_location' => 'Book location',
                 'great_for' => 'Great for',
                 'application' => 'Application',
                 'tips' => 'Tips',
@@ -308,7 +307,6 @@ class MowRowAppDisplay
         }
 
         foreach ([
-            'instructor' => 'Instructor',
             'body_area' => 'Body area',
             'helps_with' => 'Helps with',
         ] as $key => $label) {
@@ -350,7 +348,12 @@ class MowRowAppDisplay
     private static function sourceAttribution(array $video, ?array $acf, bool $breathe): ?array
     {
         if ($breathe) {
-            return ['label' => '', 'value' => self::BOOK_LINE];
+            $pages = self::formatBookPages(self::bookLocation($video));
+            $value = $pages === ''
+                ? self::BOOK_LINE
+                : self::BOOK_LINE.', '.$pages;
+
+            return ['label' => '', 'value' => $value];
         }
 
         if (! is_array($acf)) {
@@ -402,6 +405,40 @@ class MowRowAppDisplay
         $sct = strtolower(trim((string) ($acf['scheduled_content_type'] ?? $video['scheduled_content_type'] ?? '')));
 
         return $sct === 'weekly' ? 'weekly' : 'move';
+    }
+
+    /**
+     * @param  array<string, mixed>  $video
+     */
+    private static function bookLocation(array $video): string
+    {
+        $mbr = $video['mbr_pwa'] ?? null;
+        if (is_array($mbr)) {
+            $location = trim((string) ($mbr['book_location'] ?? ''));
+            if ($location !== '') {
+                return $location;
+            }
+        }
+
+        return trim((string) ($video['book_location'] ?? ''));
+    }
+
+    private static function formatBookPages(string $location): string
+    {
+        $location = trim(html_entity_decode($location, ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+        if ($location === '') {
+            return '';
+        }
+
+        if (preg_match('/^pp?\.\s*/i', $location)) {
+            return preg_replace('/\s+/', ' ', $location) ?? $location;
+        }
+
+        if (preg_match('/[-–,;\/]| to /i', $location)) {
+            return 'pp. '.$location;
+        }
+
+        return 'p. '.$location;
     }
 
     private static function isOnlineClassPrefix(string $videoTitle): bool
