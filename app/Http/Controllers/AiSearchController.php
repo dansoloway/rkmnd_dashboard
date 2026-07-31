@@ -33,6 +33,7 @@ class AiSearchController extends Controller
             selectedNamespace: old('namespace', $defaultNamespace),
             prefillQuery: old('query', ''),
             productId: $productId,
+            searchMode: old('search_mode', 'classic'),
         ));
     }
 
@@ -50,6 +51,7 @@ class AiSearchController extends Controller
                 },
             ],
             'namespace' => 'nullable|string|max:128',
+            'search_mode' => 'nullable|string|in:classic,literal',
         ]);
 
         $api = $this->getApiService();
@@ -61,10 +63,15 @@ class AiSearchController extends Controller
         $searchError = null;
         $searchId = null;
         $selectedNamespace = trim((string) ($validated['namespace'] ?? '')) ?: $defaultNamespace;
+        $searchMode = trim((string) ($validated['search_mode'] ?? 'classic')) ?: 'classic';
+        if (! in_array($searchMode, ['classic', 'literal'], true)) {
+            $searchMode = 'classic';
+        }
 
         try {
             $payload = [
                 'query' => trim($validated['query']),
+                'search_mode' => $searchMode,
             ];
             if ($selectedNamespace !== '') {
                 $payload['namespace'] = $selectedNamespace;
@@ -79,6 +86,9 @@ class AiSearchController extends Controller
             $searchId = is_string($searchResponse['search_id'] ?? null)
                 ? $searchResponse['search_id']
                 : null;
+            if (is_string($searchResponse['search_mode'] ?? null) && $searchResponse['search_mode'] !== '') {
+                $searchMode = $searchResponse['search_mode'];
+            }
         } catch (\Exception $e) {
             Log::warning('AI semantic search from dashboard failed', [
                 'message' => $e->getMessage(),
@@ -98,6 +108,7 @@ class AiSearchController extends Controller
             searchResponse: $searchResponse,
             searchError: $searchError,
             searchId: $searchId,
+            searchMode: $searchMode,
         ));
     }
 
@@ -160,6 +171,7 @@ class AiSearchController extends Controller
         ?array $searchResponse = null,
         ?string $searchError = null,
         ?string $searchId = null,
+        string $searchMode = 'classic',
     ): array {
         $searchRoute = $productId === ProductContext::MOW_ROW
             ? 'mow-row.search.search'
@@ -167,6 +179,10 @@ class AiSearchController extends Controller
         $feedbackRoute = $productId === ProductContext::MOW_ROW
             ? 'mow-row.search.feedback'
             : 'ai-search.playground.feedback';
+
+        if (! in_array($searchMode, ['classic', 'literal'], true)) {
+            $searchMode = 'classic';
+        }
 
         return [
             'namespaces' => $namespaces,
@@ -178,6 +194,7 @@ class AiSearchController extends Controller
             'searchResponse' => $searchResponse,
             'searchError' => $searchError,
             'searchId' => $searchId,
+            'searchMode' => $searchMode,
             'productId' => $productId,
             'product' => ProductContext::config($productId),
             'searchFormAction' => route($searchRoute),

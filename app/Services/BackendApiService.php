@@ -363,7 +363,7 @@ class BackendApiService
      * Search videos using AI semantic search (POST /api/v1/search — same contract as WordPress page-video-ai).
      * No cache - always get fresh results
      *
-     * @param  array{query: string, namespace?: string|null, video_length?: string|null, post_type?: string|null}  $payload
+     * @param  array{query: string, namespace?: string|null, video_length?: string|null, post_type?: string|null, search_mode?: string|null}  $payload
      * @return array<string, mixed>
      */
     public function semanticSearchVideos(array $payload): array

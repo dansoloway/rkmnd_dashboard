@@ -50,6 +50,35 @@
             </div>
 
             <div>
+                <span class="block text-sm font-medium text-gray-700 mb-1">Search mode</span>
+                <div class="flex flex-wrap gap-4 text-sm">
+                    <label class="inline-flex items-center gap-2 cursor-pointer">
+                        <input
+                            type="radio"
+                            name="search_mode"
+                            value="classic"
+                            class="text-blue-600 focus:ring-blue-500"
+                            @checked(($searchMode ?? 'classic') === 'classic')
+                        >
+                        <span>Classic <span class="text-gray-500">(dense only)</span></span>
+                    </label>
+                    <label class="inline-flex items-center gap-2 cursor-pointer">
+                        <input
+                            type="radio"
+                            name="search_mode"
+                            value="literal"
+                            class="text-blue-600 focus:ring-blue-500"
+                            @checked(($searchMode ?? 'classic') === 'literal')
+                        >
+                        <span>Literal <span class="text-gray-500">(abbrev / typo / lexical boost)</span></span>
+                    </label>
+                </div>
+                <p class="mt-1 text-xs text-gray-500">
+                    Compare modes against the same query. WordPress and other clients stay on classic unless they send <code class="bg-gray-100 px-1">search_mode</code>.
+                </p>
+            </div>
+
+            <div>
                 <label for="query" class="sr-only">Search</label>
                 <textarea
                     id="query"
@@ -96,6 +125,27 @@
                     </p>
                 @endif
             </div>
+            @php
+                $effectiveMode = $searchResponse['search_mode'] ?? ($searchMode ?? 'classic');
+                $qi = is_array($searchResponse['query_interpretation'] ?? null)
+                    ? $searchResponse['query_interpretation']
+                    : null;
+            @endphp
+            <p class="text-sm text-gray-600">
+                Mode:
+                <code class="bg-gray-100 px-1 rounded">{{ $effectiveMode }}</code>
+                @if($qi && !empty($qi['semantic_query']))
+                    · embedded as
+                    <code class="bg-gray-100 px-1 rounded">{{ $qi['semantic_query'] }}</code>
+                @endif
+            </p>
+            @if($qi && !empty($qi['lexical_terms']))
+                <p class="text-xs text-gray-500">
+                    Lexical terms:
+                    {{ implode(', ', array_slice($qi['lexical_terms'], 0, 12)) }}
+                    @if(count($qi['lexical_terms']) > 12)…@endif
+                </p>
+            @endif
             @if($searchResponse && ($searchResponse['status'] ?? '') === 'success' && ((($searchResponse['message'] ?? null) !== null) || (($searchResponse['no_recommendation_reason'] ?? null) !== null)))
                 <div class="text-sm border-l-4 border-amber-400 pl-3 py-2 bg-amber-50 text-gray-800">
                     @if(($searchResponse['no_recommendation_reason'] ?? null) === 'off_topic')
