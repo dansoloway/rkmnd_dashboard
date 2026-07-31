@@ -29,6 +29,16 @@ return [
                     'active' => ['ai-search.playground.*'],
                 ],
                 [
+                    'label' => 'Anatomy dictionary',
+                    'route' => 'ai-search.vocabulary.index',
+                    'active' => ['ai-search.vocabulary.*'],
+                ],
+                [
+                    'label' => 'Catalog terms',
+                    'route' => 'ai-search.catalog-terms.index',
+                    'active' => ['ai-search.catalog-terms.*'],
+                ],
+                [
                     'label' => 'Search-visible audio',
                     'route' => 'ai-search.search-visible-audio',
                     'active' => ['ai-search.search-visible-audio'],

@@ -3,9 +3,11 @@
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\AiSearchController;
+use App\Http\Controllers\CatalogTermsController;
 use App\Http\Controllers\MowRowController;
 use App\Http\Controllers\NamespaceStudioController;
 use App\Http\Controllers\VideoController;
+use App\Http\Controllers\VocabularyController;
 use Illuminate\Support\Facades\Route;
 
 // Public routes
@@ -38,6 +40,16 @@ Route::middleware(['auth'])->group(function () {
             ->name('embedding-text');
         Route::get('/playground', [AiSearchController::class, 'index'])->name('playground.index');
         Route::post('/playground', [AiSearchController::class, 'search'])->name('playground.search');
+        Route::get('/vocabulary', [VocabularyController::class, 'index'])->name('vocabulary.index');
+        Route::get('/vocabulary/create', [VocabularyController::class, 'create'])->name('vocabulary.create');
+        Route::post('/vocabulary', [VocabularyController::class, 'store'])->name('vocabulary.store');
+        Route::get('/vocabulary/{conceptId}/edit', [VocabularyController::class, 'edit'])->name('vocabulary.edit');
+        Route::put('/vocabulary/{conceptId}', [VocabularyController::class, 'update'])->name('vocabulary.update');
+        Route::delete('/vocabulary/{conceptId}', [VocabularyController::class, 'destroy'])->name('vocabulary.destroy');
+        Route::get('/catalog-terms', [CatalogTermsController::class, 'index'])->name('catalog-terms.index');
+        Route::post('/catalog-terms/terms', [CatalogTermsController::class, 'storeTerm'])->name('catalog-terms.store');
+        Route::delete('/catalog-terms/terms', [CatalogTermsController::class, 'destroyTerm'])->name('catalog-terms.destroy');
+        Route::put('/catalog-terms/proper-nouns', [CatalogTermsController::class, 'updateProperNouns'])->name('catalog-terms.proper-nouns');
         Route::get('/analytics', [AnalyticsController::class, 'index'])->name('analytics');
         Route::post('/analytics/search', [AnalyticsController::class, 'search'])->name('analytics.search');
     });

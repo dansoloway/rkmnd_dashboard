@@ -360,6 +360,60 @@ class BackendApiService
     }
 
     /**
+     * JSON request helper for PUT/DELETE/POST with a JSON body.
+     *
+     * @return array<string, mixed>
+     */
+    protected function sendJson(string $method, string $endpoint, array $payload = []): array
+    {
+        try {
+            $pending = Http::timeout($this->timeout)
+                ->withToken($this->apiKey)
+                ->asJson();
+
+            $method = strtolower($method);
+            if ($method === 'put') {
+                $response = $pending->put($this->baseUrl.$endpoint, $payload);
+            } elseif ($method === 'delete') {
+                $response = $pending->delete($this->baseUrl.$endpoint, $payload);
+            } elseif ($method === 'post') {
+                $response = $pending->post($this->baseUrl.$endpoint, $payload);
+            } else {
+                throw new Exception("Unsupported JSON method: {$method}");
+            }
+
+            if ($response->successful()) {
+                $data = $response->json();
+
+                return is_array($data) ? $data : [];
+            }
+
+            $decoded = $response->json();
+            $detail = $decoded['detail'] ?? null;
+            if (is_array($detail)) {
+                $detail = json_encode($detail);
+            }
+            if (! is_string($detail) || $detail === '') {
+                $detail = $response->body();
+            }
+
+            Log::error('Backend API Error (JSON '.$method.')', [
+                'endpoint' => $endpoint,
+                'status' => $response->status(),
+                'body' => $response->body(),
+            ]);
+
+            throw new Exception('API request failed: '.$response->status().' — '.$detail);
+        } catch (Exception $e) {
+            Log::error('Backend API Exception (JSON '.$method.')', [
+                'endpoint' => $endpoint,
+                'message' => $e->getMessage(),
+            ]);
+            throw $e;
+        }
+    }
+
+    /**
      * Search videos using AI semantic search (POST /api/v1/search — same contract as WordPress page-video-ai).
      * No cache - always get fresh results
      *
@@ -369,6 +423,77 @@ class BackendApiService
     public function semanticSearchVideos(array $payload): array
     {
         return $this->postJson('/api/v1/search', array_filter($payload, fn ($v) => $v !== null && $v !== ''));
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function getVocabulary(): array
+    {
+        return $this->makeRequest('get', '/api/v1/vocabulary', [], 0);
+    }
+
+    /**
+     * @param  array<string, mixed>  $concept
+     * @return array<string, mixed>
+     */
+    public function upsertVocabularyConcept(string $conceptId, array $concept): array
+    {
+        return $this->sendJson('put', '/api/v1/vocabulary/concepts/'.rawurlencode($conceptId), $concept);
+    }
+
+    /**
+     * @param  array<string, mixed>  $concept
+     * @return array<string, mixed>
+     */
+    public function createVocabularyConcept(array $concept): array
+    {
+        return $this->sendJson('post', '/api/v1/vocabulary/concepts', $concept);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function deleteVocabularyConcept(string $conceptId, bool $hard = false): array
+    {
+        $qs = $hard ? '?hard=true' : '';
+
+        return $this->sendJson('delete', '/api/v1/vocabulary/concepts/'.rawurlencode($conceptId).$qs, []);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function getCatalogTerms(): array
+    {
+        return $this->makeRequest('get', '/api/v1/catalog-terms', [], 0);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function addCatalogTerm(string $term): array
+    {
+        return $this->sendJson('post', '/api/v1/catalog-terms/terms', ['term' => $term]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function removeCatalogTerm(string $term): array
+    {
+        $endpoint = '/api/v1/catalog-terms/terms?term='.rawurlencode($term);
+
+        return $this->sendJson('delete', $endpoint, []);
+    }
+
+    /**
+     * @param  list<string>  $properNouns
+     * @return array<string, mixed>
+     */
+    public function updateCatalogProperNouns(array $properNouns): array
+    {
+        return $this->sendJson('put', '/api/v1/catalog-terms/proper-nouns', ['proper_nouns' => array_values($properNouns)]);
     }
 
     /**
