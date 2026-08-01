@@ -92,18 +92,35 @@ After creating the user:
 ## 👥 Create Multiple Users
 
 ```bash
-# Create admin user
+# Create admin user (full dashboard)
 php artisan user:create-test \
   --email="admin@fitform100.com" \
   --password="SecurePassword123" \
-  --name="Admin User"
+  --name="Admin User" \
+  --role=admin
 
-# Create another user
+# Create another full-access user
 php artisan user:create-test \
   --email="user@fitform100.com" \
   --password="UserPassword123" \
-  --name="Regular User"
+  --name="Regular User" \
+  --role=user
+
+# Analytics-only (queries + results; no library/playground/vocab)
+php artisan user:create-test \
+  --email="manager@example.com" \
+  --password="SecurePassword123" \
+  --name="Analytics Manager" \
+  --role=analytics
 ```
+
+### Roles
+
+| Role | Access |
+|------|--------|
+| `user` (default) | Full dashboard |
+| `admin` / `superadmin` | Full dashboard (same as user today) |
+| `analytics` | AI Search Analytics + Account only |
 
 ---
 

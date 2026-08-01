@@ -21,7 +21,7 @@ Route::post('/login', [LoginController::class, 'login']);
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
 // Protected routes (require authentication)
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth', 'restrict.analytics'])->group(function () {
 
     // Dashboard (product hub)
     Route::get('/dashboard', [\App\Http\Controllers\DashboardController::class, 'index'])->name('dashboard');
@@ -102,7 +102,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/ai-search/playground/feedback', [AiSearchController::class, 'feedback'])->name('ai-search.playground.feedback');
     Route::post('/mow-row/search/feedback', [AiSearchController::class, 'feedback'])->name('mow-row.search.feedback');
 
-    Route::redirect('/analytics', '/ai-search/analytics');
+    Route::get('/analytics', fn () => redirect()->route('ai-search.analytics'))->name('analytics.redirect');
     Route::get('/analytics-old', fn () => redirect()->route('ai-search.analytics'))->name('analytics.index');
     Route::post('/analytics-old', [AnalyticsController::class, 'search'])->name('analytics.search');
 

@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::table('users', function (Blueprint $table) {
             $table->foreignId('tenant_id')->nullable()->after('id')->constrained()->onDelete('cascade');
-            $table->string('role')->default('user')->after('password')->comment('user, admin, superadmin');
+            $table->string('role')->default('user')->after('password')->comment('user, admin, superadmin, analytics');
             
             // Index for faster queries
             $table->index(['tenant_id', 'email']);

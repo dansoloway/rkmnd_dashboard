@@ -17,7 +17,8 @@ class CreateTestUser extends Command
     protected $signature = 'user:create-test
                             {--email= : Email address for the user}
                             {--password= : Password for the user}
-                            {--name= : Full name of the user}';
+                            {--name= : Full name of the user}
+                            {--role=user : Role (user, admin, superadmin, analytics)}';
 
     /**
      * The console command description.
@@ -41,28 +42,38 @@ class CreateTestUser extends Command
         $email = $this->option('email') ?: $this->ask('Email address', 'admin@test.com');
         $password = $this->option('password') ?: $this->secret('Password (leave empty for "password")') ?: 'password';
         $name = $this->option('name') ?: $this->ask('Full name', 'Test Admin');
+        $role = strtolower((string) ($this->option('role') ?: User::ROLE_USER));
+
+        if (! in_array($role, User::roles(), true)) {
+            $this->error('Invalid role. Allowed: '.implode(', ', User::roles()));
+
+            return 1;
+        }
 
         // Check if user already exists
         $existingUser = User::where('email', $email)->first();
         if ($existingUser) {
-            if (!$this->confirm("User with email {$email} already exists. Update it?", true)) {
+            if (! $this->confirm("User with email {$email} already exists. Update it?", true)) {
                 $this->error('User creation cancelled.');
+
                 return 1;
             }
-            
+
             $user = $existingUser;
             $user->name = $name;
             $user->password = Hash::make($password);
+            $user->role = $role;
             $user->save();
-            
+
+            $tenant = $user->tenant;
             $this->info('✅ User updated successfully!');
         } else {
             // Get first tenant (or create one)
             $tenant = Tenant::first();
-            
-            if (!$tenant) {
+
+            if (! $tenant) {
                 $this->error('⚠️  No tenant found in database!');
-                
+
                 if ($this->confirm('Create a test tenant?', true)) {
                     $tenant = Tenant::create([
                         'name' => 'test_client',
@@ -72,6 +83,7 @@ class CreateTestUser extends Command
                     $this->info("✅ Created tenant: {$tenant->name}");
                 } else {
                     $this->error('Cannot create user without a tenant.');
+
                     return 1;
                 }
             }
@@ -82,6 +94,7 @@ class CreateTestUser extends Command
                 'email' => $email,
                 'password' => Hash::make($password),
                 'tenant_id' => $tenant->id,
+                'role' => $role,
             ]);
 
             $this->info('✅ User created successfully!');
@@ -93,18 +106,21 @@ class CreateTestUser extends Command
         $this->line('LOGIN CREDENTIALS');
         $this->line('════════════════════════════════════════════════════════════════');
         $this->line('');
-        $this->line('📧 Email:    ' . $user->email);
-        $this->line('🔑 Password: ' . $password);
-        $this->line('👤 Name:     ' . $user->name);
-        $this->line('🏢 Tenant:   ' . ($tenant->name ?? 'N/A') . ' (ID: ' . $user->tenant_id . ')');
+        $this->line('📧 Email:    '.$user->email);
+        $this->line('🔑 Password: '.$password);
+        $this->line('👤 Name:     '.$user->name);
+        $this->line('🎭 Role:     '.$user->role);
+        $this->line('🏢 Tenant:   '.($tenant->name ?? 'N/A').' (ID: '.$user->tenant_id.')');
         $this->line('');
+        if ($user->isAnalyticsOnly()) {
+            $this->line('Access: Analytics + Account only');
+        }
         $this->line('════════════════════════════════════════════════════════════════');
         $this->info('');
-        
-        $this->info('🌐 Login URL: ' . config('app.url') . '/login');
+
+        $this->info('🌐 Login URL: '.config('app.url').'/login');
         $this->info('');
-        
+
         return 0;
     }
 }
-

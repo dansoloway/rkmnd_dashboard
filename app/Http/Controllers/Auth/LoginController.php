@@ -38,6 +38,10 @@ class LoginController extends Controller
                 session(['tenant_name' => Auth::user()->tenant->display_name]);
             }
 
+            if (Auth::user()->isAnalyticsOnly()) {
+                return redirect()->route('ai-search.analytics');
+            }
+
             return redirect()->intended('dashboard');
         }
 

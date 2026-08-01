@@ -21,6 +21,12 @@
         <p class="mt-2 text-gray-600">Monitor your usage and quota limits</p>
     </div>
 
+    @if(session('error'))
+        <div class="bg-red-50 border border-red-200 rounded-lg p-4">
+            <p class="text-red-800">{{ session('error') }}</p>
+        </div>
+    @endif
+
     @if(isset($error))
         <div class="bg-red-50 border border-red-200 rounded-lg p-4">
             <p class="text-red-800">{{ $error }}</p>

@@ -25,6 +25,23 @@ class Navigation
      */
     public static function primary(): array
     {
+        $user = auth()->user();
+
+        if ($user && $user->isAnalyticsOnly()) {
+            return [
+                [
+                    'label' => 'Analytics',
+                    'route' => 'ai-search.analytics',
+                    'active' => ['ai-search.analytics*', 'mow-row.analytics*', 'analytics.*'],
+                ],
+                [
+                    'label' => 'Account',
+                    'route' => 'account.index',
+                    'active' => ['account.*'],
+                ],
+            ];
+        }
+
         return config('navigation.primary', []);
     }
 
