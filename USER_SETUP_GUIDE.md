@@ -4,11 +4,21 @@ Quick guide to create users for the Laravel dashboard.
 
 ---
 
+## ✅ Preferred: Users UI (admins)
+
+1. Log in as an **admin** or **superadmin** at https://rkmnd.fitform100.net/login
+2. Open **Platform → Users**
+3. Create users with role **Analytics only**, **User**, or **Admin**
+
+If your account is still `user`, promote it once via artisan (see below), then use the UI.
+
+---
+
 ## 🚀 Quick Setup (Run on Laravel Server)
 
 ```bash
 # Navigate to project
-cd /opt/bitnami/apache/htdocs/rkmnd.fitform100.net
+cd /home/bitnami/htdocs/rkmnd.fitform100.net
 
 # Run migrations (if not already done)
 php artisan migrate

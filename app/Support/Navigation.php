@@ -2,6 +2,8 @@
 
 namespace App\Support;
 
+use App\Models\User;
+
 class Navigation
 {
     /**
@@ -42,7 +44,33 @@ class Navigation
             ];
         }
 
-        return config('navigation.primary', []);
+        return self::filterForUser(config('navigation.primary', []), $user);
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $items
+     * @return array<int, array<string, mixed>>
+     */
+    private static function filterForUser(array $items, ?User $user): array
+    {
+        $out = [];
+
+        foreach ($items as $item) {
+            if (! empty($item['admin_only']) && (! $user || ! $user->isAdmin())) {
+                continue;
+            }
+
+            if (! empty($item['children']) && is_array($item['children'])) {
+                $item['children'] = self::filterForUser($item['children'], $user);
+                if ($item['children'] === [] && empty($item['route'])) {
+                    continue;
+                }
+            }
+
+            $out[] = $item;
+        }
+
+        return $out;
     }
 
     /**

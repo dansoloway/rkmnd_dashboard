@@ -6,6 +6,7 @@ use App\Http\Controllers\AiSearchController;
 use App\Http\Controllers\CatalogTermsController;
 use App\Http\Controllers\MowRowController;
 use App\Http\Controllers\NamespaceStudioController;
+use App\Http\Controllers\UserManagementController;
 use App\Http\Controllers\VideoController;
 use App\Http\Controllers\VocabularyController;
 use Illuminate\Support\Facades\Route;
@@ -115,4 +116,13 @@ Route::middleware(['auth', 'restrict.analytics'])->group(function () {
     Route::get('/account', [App\Http\Controllers\AccountController::class, 'index'])->name('account.index');
     Route::put('/account', [App\Http\Controllers\AccountController::class, 'update'])->name('account.update');
     Route::put('/account/password', [App\Http\Controllers\AccountController::class, 'updatePassword'])->name('account.password');
+
+    // User management (admins only)
+    Route::middleware(['admin'])->prefix('users')->name('users.')->group(function () {
+        Route::get('/', [UserManagementController::class, 'index'])->name('index');
+        Route::post('/', [UserManagementController::class, 'store'])->name('store');
+        Route::get('/{user}/edit', [UserManagementController::class, 'edit'])->name('edit');
+        Route::put('/{user}', [UserManagementController::class, 'update'])->name('update');
+        Route::delete('/{user}', [UserManagementController::class, 'destroy'])->name('destroy');
+    });
 });

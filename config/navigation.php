@@ -83,8 +83,14 @@ return [
         ],
         [
             'label' => 'Platform',
-            'active' => ['sync-logs.*', 'account.*', 'videos.database', 'videos.embeddings-reconcile', 'query.*'],
+            'active' => ['sync-logs.*', 'account.*', 'users.*', 'videos.database', 'videos.embeddings-reconcile', 'query.*'],
             'children' => [
+                [
+                    'label' => 'Users',
+                    'route' => 'users.index',
+                    'active' => ['users.*'],
+                    'admin_only' => true,
+                ],
                 [
                     'label' => 'Sync logs',
                     'route' => 'sync-logs.index',

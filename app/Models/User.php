@@ -110,4 +110,34 @@ class User extends Authenticatable
     {
         return ! $this->isAnalyticsOnly();
     }
+
+    /**
+     * Roles this user may assign when managing other users.
+     *
+     * @return list<string>
+     */
+    public function assignableRoles(): array
+    {
+        $roles = [
+            self::ROLE_USER,
+            self::ROLE_ADMIN,
+            self::ROLE_ANALYTICS,
+        ];
+
+        if ($this->isSuperAdmin()) {
+            $roles[] = self::ROLE_SUPERADMIN;
+        }
+
+        return $roles;
+    }
+
+    public static function roleLabel(string $role): string
+    {
+        return match ($role) {
+            self::ROLE_ADMIN => 'Admin',
+            self::ROLE_SUPERADMIN => 'Superadmin',
+            self::ROLE_ANALYTICS => 'Analytics only',
+            default => 'User',
+        };
+    }
 }
