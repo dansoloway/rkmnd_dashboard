@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\Tenant;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -30,7 +31,7 @@ class UserFactory extends Factory
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),
-            'role' => 'user',
+            'role' => User::ROLE_USER,
             'remember_token' => Str::random(10),
         ];
     }
@@ -45,7 +46,14 @@ class UserFactory extends Factory
     public function admin(): static
     {
         return $this->state(fn (array $attributes) => [
-            'role' => 'admin',
+            'role' => User::ROLE_ADMIN,
+        ]);
+    }
+
+    public function manager(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role' => User::ROLE_USER,
         ]);
     }
 

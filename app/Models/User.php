@@ -57,6 +57,7 @@ class User extends Authenticatable
         return $this->belongsTo(Tenant::class);
     }
 
+    /** Stored as `user`; displayed as Manager. */
     public const ROLE_USER = 'user';
 
     public const ROLE_ADMIN = 'admin';
@@ -104,7 +105,7 @@ class User extends Authenticatable
     }
 
     /**
-     * Full dashboard (library, playground, vocab, platform tools, etc.).
+     * Full dashboard for managers (library, playground, vocab, platform tools, etc.).
      */
     public function hasFullAccess(): bool
     {
@@ -134,10 +135,11 @@ class User extends Authenticatable
     public static function roleLabel(string $role): string
     {
         return match ($role) {
+            self::ROLE_USER => 'Manager',
             self::ROLE_ADMIN => 'Admin',
             self::ROLE_SUPERADMIN => 'Superadmin',
             self::ROLE_ANALYTICS => 'Analytics only',
-            default => 'User',
+            default => ucfirst($role),
         };
     }
 }

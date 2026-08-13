@@ -18,7 +18,7 @@ class CreateTestUser extends Command
                             {--email= : Email address for the user}
                             {--password= : Password for the user}
                             {--name= : Full name of the user}
-                            {--role=user : Role (user, admin, superadmin, analytics)}';
+                            {--role=user : Role (manager/user, admin, superadmin, analytics)}';
 
     /**
      * The console command description.
@@ -43,9 +43,12 @@ class CreateTestUser extends Command
         $password = $this->option('password') ?: $this->secret('Password (leave empty for "password")') ?: 'password';
         $name = $this->option('name') ?: $this->ask('Full name', 'Test Admin');
         $role = strtolower((string) ($this->option('role') ?: User::ROLE_USER));
+        if ($role === 'manager') {
+            $role = User::ROLE_USER;
+        }
 
         if (! in_array($role, User::roles(), true)) {
-            $this->error('Invalid role. Allowed: '.implode(', ', User::roles()));
+            $this->error('Invalid role. Allowed: manager, '.implode(', ', User::roles()));
 
             return 1;
         }
@@ -109,7 +112,7 @@ class CreateTestUser extends Command
         $this->line('📧 Email:    '.$user->email);
         $this->line('🔑 Password: '.$password);
         $this->line('👤 Name:     '.$user->name);
-        $this->line('🎭 Role:     '.$user->role);
+        $this->line('🎭 Role:     '.User::roleLabel($user->role).' ('.$user->role.')');
         $this->line('🏢 Tenant:   '.($tenant->name ?? 'N/A').' (ID: '.$user->tenant_id.')');
         $this->line('');
         if ($user->isAnalyticsOnly()) {

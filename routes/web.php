@@ -1,6 +1,8 @@
 <?php
 
+use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\AiSearchController;
 use App\Http\Controllers\CatalogTermsController;
@@ -20,6 +22,13 @@ Route::get('/', function () {
 Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [LoginController::class, 'login']);
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
+
+Route::get('/forgot-password', [ForgotPasswordController::class, 'showLinkRequestForm'])->name('password.request');
+Route::post('/forgot-password', [ForgotPasswordController::class, 'sendResetLinkEmail'])
+    ->middleware('throttle:6,1')
+    ->name('password.email');
+Route::get('/reset-password/{token}', [ResetPasswordController::class, 'showResetForm'])->name('password.reset');
+Route::post('/reset-password', [ResetPasswordController::class, 'reset'])->name('password.update');
 
 // Protected routes (require authentication)
 Route::middleware(['auth', 'restrict.analytics'])->group(function () {
@@ -124,5 +133,6 @@ Route::middleware(['auth', 'restrict.analytics'])->group(function () {
         Route::get('/{user}/edit', [UserManagementController::class, 'edit'])->name('edit');
         Route::put('/{user}', [UserManagementController::class, 'update'])->name('update');
         Route::delete('/{user}', [UserManagementController::class, 'destroy'])->name('destroy');
+        Route::post('/{user}/send-reset-link', [UserManagementController::class, 'sendResetLink'])->name('send-reset-link');
     });
 });

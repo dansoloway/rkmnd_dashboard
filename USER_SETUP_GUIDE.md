@@ -8,7 +8,7 @@ Quick guide to create users for the Laravel dashboard.
 
 1. Log in as an **admin** or **superadmin** at https://rkmnd.fitform100.net/login
 2. Open **Platform → Users**
-3. Create users with role **Analytics only**, **User**, or **Admin**
+3. Create users with role **Analytics only**, **Manager**, or **Admin**
 
 If your account is still `user`, promote it once via artisan (see below), then use the UI.
 
@@ -109,12 +109,12 @@ php artisan user:create-test \
   --name="Admin User" \
   --role=admin
 
-# Create another full-access user
+# Create a manager (full dashboard, including anatomy terms)
 php artisan user:create-test \
   --email="user@fitform100.com" \
   --password="UserPassword123" \
-  --name="Regular User" \
-  --role=user
+  --name="Regular Manager" \
+  --role=manager
 
 # Analytics-only (queries + results; no library/playground/vocab)
 php artisan user:create-test \
@@ -126,17 +126,21 @@ php artisan user:create-test \
 
 ### Roles
 
-| Role | Access |
-|------|--------|
-| `user` (default) | Full dashboard |
-| `admin` / `superadmin` | Full dashboard (same as user today) |
-| `analytics` | AI Search Analytics + Account only |
+| Role (stored) | Display name | Access |
+|---------------|--------------|--------|
+| `user` (default) | **Manager** | Full dashboard, including anatomy dictionary and catalog terms |
+| `admin` / `superadmin` | Admin / Superadmin | Full dashboard + user management |
+| `analytics` | Analytics only | AI Search Analytics + Account only |
 
 ---
 
-## 🔑 Reset Existing User Password
+## 🔑 Reset a password
 
-If a user already exists, the command will ask if you want to update it:
+People can click **Forgot password?** on the login page. Admins can also open **Platform → Users → Edit** and click **Send password reset email**.
+
+Both send a reset link to that person’s email. Mail must be configured (`MAIL_MAILER` — not `log`) or the message only appears in the Laravel log.
+
+To set a password from the server instead:
 
 ```bash
 php artisan user:create-test --email="existing@email.com"

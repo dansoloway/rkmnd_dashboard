@@ -3,7 +3,10 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Password;
 
 class AuthTest extends FeatureTestCase
 {
@@ -63,5 +66,62 @@ class AuthTest extends FeatureTestCase
             ->assertRedirect('/');
 
         $this->assertGuest();
+    }
+
+    public function test_guest_can_view_forgot_password_form(): void
+    {
+        $this->get(route('password.request'))
+            ->assertOk()
+            ->assertViewIs('auth.forgot-password');
+    }
+
+    public function test_login_page_links_to_forgot_password(): void
+    {
+        $this->get(route('login'))
+            ->assertOk()
+            ->assertSee('Forgot password?');
+    }
+
+    public function test_forgot_password_sends_reset_notification_for_known_email(): void
+    {
+        Notification::fake();
+
+        $user = User::factory()->create();
+
+        $this->from(route('password.request'))
+            ->post(route('password.email'), ['email' => $user->email])
+            ->assertRedirect(route('password.request'))
+            ->assertSessionHas('status');
+
+        Notification::assertSentTo($user, ResetPassword::class);
+    }
+
+    public function test_forgot_password_does_not_reveal_unknown_email(): void
+    {
+        Notification::fake();
+
+        $this->from(route('password.request'))
+            ->post(route('password.email'), ['email' => 'nobody@example.com'])
+            ->assertRedirect(route('password.request'))
+            ->assertSessionHas('status');
+
+        Notification::assertNothingSent();
+    }
+
+    public function test_user_can_reset_password_with_valid_token(): void
+    {
+        $user = User::factory()->create();
+        $token = Password::broker()->createToken($user);
+
+        $this->post(route('password.update'), [
+            'token' => $token,
+            'email' => $user->email,
+            'password' => 'new-secret-password',
+            'password_confirmation' => 'new-secret-password',
+        ])
+            ->assertRedirect(route('login'))
+            ->assertSessionHas('status');
+
+        $this->assertTrue(Hash::check('new-secret-password', $user->fresh()->password));
     }
 }

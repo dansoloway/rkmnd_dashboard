@@ -37,18 +37,18 @@ class TenantSeeder extends Seeder
             'email_verified_at' => now(),
         ]);
 
-        // Create a regular user for test_client
+        // Create a manager for test_client
         User::create([
             'tenant_id' => $testTenant->id,
-            'name' => 'Test User',
+            'name' => 'Test Manager',
             'email' => 'user@testclient.com',
             'password' => Hash::make('password'), // Change this in production!
-            'role' => 'user',
+            'role' => User::ROLE_USER,
             'email_verified_at' => now(),
         ]);
 
         $this->command->info('✅ Test tenant and users created successfully!');
-        $this->command->info('   Admin: admin@testclient.com / password');
-        $this->command->info('   User:  user@testclient.com / password');
+        $this->command->info('   Admin:   admin@testclient.com / password');
+        $this->command->info('   Manager: user@testclient.com / password');
     }
 }

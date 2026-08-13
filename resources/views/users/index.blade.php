@@ -8,7 +8,7 @@
     <div>
         <h1 class="text-3xl font-heading font-bold text-gray-900">Users</h1>
         <p class="mt-2 text-gray-600 text-sm">
-            Manage dashboard logins for your tenant. Analytics-only users can view queries and results; admins can manage everything.
+            Manage dashboard logins for your tenant. Analytics only can view queries and results. Managers get the full dashboard (including anatomy terms). Admins can also manage logins.
         </p>
     </div>
 
@@ -109,7 +109,7 @@
                     @error('role')
                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                     @enderror
-                    <p class="mt-1 text-xs text-gray-500">Analytics only = queries &amp; results. User = full dashboard. Admin = full + user management.</p>
+                    <p class="mt-1 text-xs text-gray-500">Analytics only = queries &amp; results. Manager = full dashboard. Admin = full + user management.</p>
                 </div>
                 <div>
                     <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Password</label>

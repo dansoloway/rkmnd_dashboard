@@ -7,6 +7,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Password as PasswordBroker;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\View\View;
@@ -145,6 +146,27 @@ class UserManagementController extends Controller
         return redirect()
             ->route('users.index')
             ->with('success', 'User deleted.');
+    }
+
+    public function sendResetLink(User $user): RedirectResponse
+    {
+        $admin = Auth::user();
+
+        if ($redirect = $this->guardTenantAccess($admin, $user)) {
+            return $redirect;
+        }
+
+        if (! $this->canManage($admin, $user)) {
+            return redirect()
+                ->route('users.index')
+                ->with('error', 'You cannot reset this user\'s password.');
+        }
+
+        PasswordBroker::sendResetLink(['email' => $user->email]);
+
+        return redirect()
+            ->route('users.edit', $user)
+            ->with('success', 'Password reset email sent to '.$user->email.'.');
     }
 
     private function guardTenantAccess(User $admin, User $user): ?RedirectResponse
