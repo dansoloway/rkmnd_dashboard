@@ -58,7 +58,7 @@
                             name="search_mode"
                             value="classic"
                             class="text-blue-600 focus:ring-blue-500"
-                            @checked(($searchMode ?? 'classic') === 'classic')
+                            @checked(($searchMode ?? 'literal') === 'classic')
                         >
                         <span>Classic <span class="text-gray-500">(dense only)</span></span>
                     </label>
@@ -68,13 +68,13 @@
                             name="search_mode"
                             value="literal"
                             class="text-blue-600 focus:ring-blue-500"
-                            @checked(($searchMode ?? 'classic') === 'literal')
+                            @checked(($searchMode ?? 'literal') === 'literal')
                         >
                         <span>Literal <span class="text-gray-500">(abbrev / typo / lexical boost)</span></span>
                     </label>
                 </div>
                 <p class="mt-1 text-xs text-gray-500">
-                    Compare modes against the same query. WordPress and other clients stay on classic unless they send <code class="bg-gray-100 px-1">search_mode</code>.
+                    Literal is the API default (WordPress gets it automatically when it omits <code class="bg-gray-100 px-1">search_mode</code>). Use Classic here to A/B compare the same query.
                 </p>
             </div>
 

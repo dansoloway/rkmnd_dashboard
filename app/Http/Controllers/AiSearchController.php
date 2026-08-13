@@ -33,7 +33,7 @@ class AiSearchController extends Controller
             selectedNamespace: old('namespace', $defaultNamespace),
             prefillQuery: old('query', ''),
             productId: $productId,
-            searchMode: old('search_mode', 'classic'),
+            searchMode: old('search_mode', 'literal'),
         ));
     }
 
@@ -63,9 +63,9 @@ class AiSearchController extends Controller
         $searchError = null;
         $searchId = null;
         $selectedNamespace = trim((string) ($validated['namespace'] ?? '')) ?: $defaultNamespace;
-        $searchMode = trim((string) ($validated['search_mode'] ?? 'classic')) ?: 'classic';
+        $searchMode = trim((string) ($validated['search_mode'] ?? 'literal')) ?: 'literal';
         if (! in_array($searchMode, ['classic', 'literal'], true)) {
-            $searchMode = 'classic';
+            $searchMode = 'literal';
         }
 
         try {
@@ -171,7 +171,7 @@ class AiSearchController extends Controller
         ?array $searchResponse = null,
         ?string $searchError = null,
         ?string $searchId = null,
-        string $searchMode = 'classic',
+        string $searchMode = 'literal',
     ): array {
         $searchRoute = $productId === ProductContext::MOW_ROW
             ? 'mow-row.search.search'
@@ -181,7 +181,7 @@ class AiSearchController extends Controller
             : 'ai-search.playground.feedback';
 
         if (! in_array($searchMode, ['classic', 'literal'], true)) {
-            $searchMode = 'classic';
+            $searchMode = 'literal';
         }
 
         return [
