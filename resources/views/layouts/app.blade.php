@@ -39,6 +39,8 @@
 </head>
 <body class="font-sans antialiased bg-gray-50">
     
+    @include('partials.impersonation-banner')
+
     <!-- Navigation -->
     <nav class="bg-white shadow-sm font-heading">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

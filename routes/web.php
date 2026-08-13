@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\AiSearchController;
 use App\Http\Controllers\CatalogTermsController;
+use App\Http\Controllers\ImpersonationController;
 use App\Http\Controllers\MowRowController;
 use App\Http\Controllers\NamespaceStudioController;
 use App\Http\Controllers\UserManagementController;
@@ -134,5 +135,8 @@ Route::middleware(['auth', 'restrict.analytics'])->group(function () {
         Route::put('/{user}', [UserManagementController::class, 'update'])->name('update');
         Route::delete('/{user}', [UserManagementController::class, 'destroy'])->name('destroy');
         Route::post('/{user}/send-reset-link', [UserManagementController::class, 'sendResetLink'])->name('send-reset-link');
+        Route::post('/{user}/impersonate', [ImpersonationController::class, 'start'])->name('impersonate');
     });
+
+    Route::post('/impersonate/stop', [ImpersonationController::class, 'stop'])->name('impersonate.stop');
 });

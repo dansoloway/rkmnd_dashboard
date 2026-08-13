@@ -57,6 +57,13 @@ class UserFactory extends Factory
         ]);
     }
 
+    public function analytics(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'role' => User::ROLE_ANALYTICS,
+        ]);
+    }
+
     /**
      * Indicate that the model's email address should be unverified.
      */

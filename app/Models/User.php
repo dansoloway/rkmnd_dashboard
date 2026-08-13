@@ -113,6 +113,18 @@ class User extends Authenticatable
     }
 
     /**
+     * Admins may not manage superadmins unless they are superadmin.
+     */
+    public function canManage(User $target): bool
+    {
+        if ($target->isSuperAdmin() && ! $this->isSuperAdmin()) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
      * Roles this user may assign when managing other users.
      *
      * @return list<string>

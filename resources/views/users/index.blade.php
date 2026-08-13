@@ -50,6 +50,12 @@
                         </td>
                         <td class="px-4 py-3 text-right whitespace-nowrap space-x-3">
                             @if(! $u->isSuperAdmin() || auth()->user()->isSuperAdmin())
+                                @if($u->id !== auth()->id() && ! session('impersonator_id'))
+                                    <form method="POST" action="{{ route('users.impersonate', $u) }}" class="inline">
+                                        @csrf
+                                        <button type="submit" class="text-blue-600 hover:underline">Impersonate</button>
+                                    </form>
+                                @endif
                                 <a href="{{ route('users.edit', $u) }}" class="text-blue-600 hover:underline">Edit</a>
                                 @if($u->id !== auth()->id())
                                     <form method="POST" action="{{ route('users.destroy', $u) }}" class="inline"

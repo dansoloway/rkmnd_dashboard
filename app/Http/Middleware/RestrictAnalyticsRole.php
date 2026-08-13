@@ -28,6 +28,7 @@ class RestrictAnalyticsRole
         'account.index',
         'account.update',
         'account.password',
+        'impersonate.stop',
     ];
 
     /**

@@ -89,6 +89,19 @@
         </form>
     </div>
 
+    @if($user->id !== auth()->id() && auth()->user()->canManage($user) && ! session('impersonator_id'))
+    <div class="bg-white rounded-lg shadow-sm p-6">
+        <h2 class="text-sm font-medium text-gray-900">Impersonate</h2>
+        <p class="mt-1 text-sm text-gray-600">See the dashboard exactly as this person does. A banner lets you switch back.</p>
+        <form method="POST" action="{{ route('users.impersonate', $user) }}" class="mt-4">
+            @csrf
+            <button type="submit" class="px-4 py-2 border border-gray-300 rounded-md text-sm text-gray-700 hover:bg-gray-50">
+                Impersonate {{ $user->name }}
+            </button>
+        </form>
+    </div>
+    @endif
+
     <div class="bg-white rounded-lg shadow-sm p-6">
         <h2 class="text-sm font-medium text-gray-900">Email a reset link</h2>
         <p class="mt-1 text-sm text-gray-600">Sends a password reset email. They choose a new password from the link — you do not need to set one here.</p>

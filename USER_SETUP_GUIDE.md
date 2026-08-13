@@ -9,6 +9,7 @@ Quick guide to create users for the Laravel dashboard.
 1. Log in as an **admin** or **superadmin** at https://rkmnd.fitform100.net/login
 2. Open **Platform → Users**
 3. Create users with role **Analytics only**, **Manager**, or **Admin**
+4. Use **Impersonate** to view the dashboard as that person (amber banner → **Return to my account**)
 
 If your account is still `user`, promote it once via artisan (see below), then use the UI.
 

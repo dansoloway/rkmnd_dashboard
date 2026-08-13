@@ -62,7 +62,7 @@ class UserManagementController extends Controller
             return $redirect;
         }
 
-        if (! $this->canManage($admin, $user)) {
+        if (! $admin->canManage($user)) {
             return redirect()
                 ->route('users.index')
                 ->with('error', 'You cannot edit this user.');
@@ -82,7 +82,7 @@ class UserManagementController extends Controller
             return $redirect;
         }
 
-        if (! $this->canManage($admin, $user)) {
+        if (! $admin->canManage($user)) {
             return redirect()
                 ->route('users.index')
                 ->with('error', 'You cannot edit this user.');
@@ -135,7 +135,7 @@ class UserManagementController extends Controller
                 ->with('error', 'You cannot delete your own account.');
         }
 
-        if (! $this->canManage($admin, $user)) {
+        if (! $admin->canManage($user)) {
             return redirect()
                 ->route('users.index')
                 ->with('error', 'You cannot delete this user.');
@@ -156,7 +156,7 @@ class UserManagementController extends Controller
             return $redirect;
         }
 
-        if (! $this->canManage($admin, $user)) {
+        if (! $admin->canManage($user)) {
             return redirect()
                 ->route('users.index')
                 ->with('error', 'You cannot reset this user\'s password.');
@@ -178,17 +178,5 @@ class UserManagementController extends Controller
         }
 
         return null;
-    }
-
-    /**
-     * Admins may not manage superadmins unless they are superadmin.
-     */
-    private function canManage(User $admin, User $target): bool
-    {
-        if ($target->isSuperAdmin() && ! $admin->isSuperAdmin()) {
-            return false;
-        }
-
-        return true;
     }
 }
