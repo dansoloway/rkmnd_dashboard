@@ -72,6 +72,8 @@ class AiSearchController extends Controller
             $payload = [
                 'query' => trim($validated['query']),
                 'search_mode' => $searchMode,
+                // Ops playground: always request full pipeline step trace (not used by public WP).
+                'include_trace' => true,
             ];
             if ($selectedNamespace !== '') {
                 $payload['namespace'] = $selectedNamespace;

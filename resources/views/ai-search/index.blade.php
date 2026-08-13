@@ -146,6 +146,54 @@
                     @if(count($qi['lexical_terms']) > 12)…@endif
                 </p>
             @endif
+            @php
+                $queryTrace = (is_array($searchResponse ?? null) && is_array($searchResponse['query_trace'] ?? null))
+                    ? $searchResponse['query_trace']
+                    : null;
+                $traceKeptHits = [];
+                if ($queryTrace) {
+                    foreach (($queryTrace['steps'] ?? []) as $step) {
+                        if (! in_array(($step['step'] ?? ''), ['literal_accept_rank', 'threshold_filter'], true)) {
+                            continue;
+                        }
+                        foreach (($step['output']['hits'] ?? []) as $hit) {
+                            if (! empty($hit['kept'])) {
+                                $traceKeptHits[] = $hit;
+                            }
+                        }
+                    }
+                }
+            @endphp
+            @if($queryTrace)
+                <details class="mt-4 border border-gray-200 rounded-lg bg-gray-50 open:bg-white">
+                    <summary class="cursor-pointer px-4 py-3 text-sm font-medium text-gray-800 select-none">
+                        Pipeline trace
+                        <span class="font-normal text-gray-500">(step input/output JSON — why each hit was kept)</span>
+                    </summary>
+                    <div class="px-4 pb-4 space-y-3 border-t border-gray-100">
+                        @if(count($traceKeptHits))
+                            <div>
+                                <p class="text-xs font-medium text-gray-700 mt-3 mb-1">Kept hits summary</p>
+                                <ul class="text-xs text-gray-600 space-y-1 font-mono">
+                                    @foreach($traceKeptHits as $hit)
+                                        <li>
+                                            #{{ $hit['final_rank'] ?? '?' }}
+                                            {{ $hit['title'] ?? '(no title)' }}
+                                            · accept={{ implode(',', $hit['accept'] ?? []) ?: '—' }}
+                                            · bucket={{ $hit['priority_bucket'] ?? '—' }}
+                                            · score={{ isset($hit['score']) && is_numeric($hit['score']) ? number_format((float) $hit['score'], 4, '.', '') : '—' }}
+                                            @if(!empty($hit['lexical']['terms']))
+                                                · lex={{ implode(',', $hit['lexical']['terms']) }}
+                                            @endif
+                                        </li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        @endif
+                        <pre class="text-xs overflow-x-auto bg-gray-900 text-gray-100 rounded-md p-3 max-h-[28rem] overflow-y-auto">{{ json_encode($queryTrace, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) }}</pre>
+                    </div>
+                </details>
+            @endif
             @if($searchResponse && ($searchResponse['status'] ?? '') === 'success' && ((($searchResponse['message'] ?? null) !== null) || (($searchResponse['no_recommendation_reason'] ?? null) !== null)))
                 <div class="text-sm border-l-4 border-amber-400 pl-3 py-2 bg-amber-50 text-gray-800">
                     @if(($searchResponse['no_recommendation_reason'] ?? null) === 'off_topic')
