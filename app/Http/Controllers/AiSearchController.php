@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\Log;
 
 class AiSearchController extends Controller
 {
+    private const VISUAL_PREFERRED_NAMESPACE = 'v6_title_tags_exercises';
+
     /** Mirrors AI Pipeline search.EMBEDDING_SCHEMES when GET /namespaces is unavailable */
     private const FALLBACK_NAMESPACES = [
         'v6_title_only',
@@ -24,96 +26,22 @@ class AiSearchController extends Controller
 
     public function index()
     {
-        $api = $this->getApiService();
-        [$namespaces, $defaultNamespace, $namespaceLoadNote] = $this->resolveNamespacesMeta($api);
-        $productId = ProductContext::id();
-
-        return view('ai-search.index', $this->searchViewData(
-            namespaces: $namespaces,
-            defaultNamespace: $defaultNamespace,
-            namespaceLoadNote: $namespaceLoadNote,
-            selectedNamespace: old('namespace', $defaultNamespace),
-            prefillQuery: old('query', ''),
-            productId: $productId,
-            searchMode: old('search_mode', 'literal'),
-        ));
+        return $this->renderSearchForm('ai-search.index', includeTrace: true);
     }
 
     public function search(Request $request)
     {
-        $validated = $request->validate([
-            'query' => [
-                'required',
-                'string',
-                'max:8192',
-                function (string $attribute, mixed $value, \Closure $fail): void {
-                    if (! is_string($value) || trim($value) === '') {
-                        $fail(__('The query cannot be empty.'));
-                    }
-                },
-            ],
-            'namespace' => 'nullable|string|max:128',
-            'search_mode' => 'nullable|string|in:classic,literal',
-        ]);
+        return $this->runSearch($request, 'ai-search.index', includeTrace: true);
+    }
 
-        $api = $this->getApiService();
-        [$namespaces, $defaultNamespace, $namespaceLoadNote] = $this->resolveNamespacesMeta($api);
-        $productId = ProductContext::id();
+    public function visualIndex()
+    {
+        return $this->renderSearchForm('ai-search.visual', includeTrace: false, preferExercisesNamespace: true);
+    }
 
-        $videos = [];
-        $searchResponse = null;
-        $searchError = null;
-        $searchId = null;
-        $selectedNamespace = trim((string) ($validated['namespace'] ?? '')) ?: $defaultNamespace;
-        $searchMode = trim((string) ($validated['search_mode'] ?? 'literal')) ?: 'literal';
-        if (! in_array($searchMode, ['classic', 'literal'], true)) {
-            $searchMode = 'literal';
-        }
-
-        try {
-            $payload = [
-                'query' => trim($validated['query']),
-                'search_mode' => $searchMode,
-                // Ops playground: always request full pipeline step trace (not used by public WP).
-                'include_trace' => true,
-            ];
-            if ($selectedNamespace !== '') {
-                $payload['namespace'] = $selectedNamespace;
-            }
-            $postType = ProductContext::searchPostType($productId);
-            if ($postType !== null) {
-                $payload['post_type'] = $postType;
-            }
-
-            $searchResponse = $api->semanticSearchVideos($payload);
-            $videos = $searchResponse['videos'] ?? [];
-            $searchId = is_string($searchResponse['search_id'] ?? null)
-                ? $searchResponse['search_id']
-                : null;
-            if (is_string($searchResponse['search_mode'] ?? null) && $searchResponse['search_mode'] !== '') {
-                $searchMode = $searchResponse['search_mode'];
-            }
-        } catch (\Exception $e) {
-            Log::warning('AI semantic search from dashboard failed', [
-                'message' => $e->getMessage(),
-                'product' => $productId,
-            ]);
-            $searchError = $e->getMessage();
-        }
-
-        return view('ai-search.index', $this->searchViewData(
-            namespaces: $namespaces,
-            defaultNamespace: $defaultNamespace,
-            namespaceLoadNote: $namespaceLoadNote,
-            selectedNamespace: $selectedNamespace,
-            prefillQuery: trim($validated['query']),
-            productId: $productId,
-            videos: is_array($videos) ? $videos : [],
-            searchResponse: $searchResponse,
-            searchError: $searchError,
-            searchId: $searchId,
-            searchMode: $searchMode,
-        ));
+    public function visualSearch(Request $request)
+    {
+        return $this->runSearch($request, 'ai-search.visual', includeTrace: false, preferExercisesNamespace: true);
     }
 
     public function feedback(Request $request)
@@ -162,6 +90,135 @@ class AiSearchController extends Controller
     }
 
     /**
+     * @return \Illuminate\View\View
+     */
+    private function renderSearchForm(string $view, bool $includeTrace, bool $preferExercisesNamespace = false)
+    {
+        $api = $this->getApiService();
+        [$namespaces, $defaultNamespace, $namespaceLoadNote] = $this->resolveNamespacesMeta($api);
+        if ($preferExercisesNamespace) {
+            $defaultNamespace = $this->preferVisualNamespace($namespaces, $defaultNamespace);
+        }
+        $productId = ProductContext::id();
+
+        return view($view, $this->searchViewData(
+            namespaces: $namespaces,
+            defaultNamespace: $defaultNamespace,
+            namespaceLoadNote: $namespaceLoadNote,
+            selectedNamespace: old('namespace', $defaultNamespace),
+            prefillQuery: old('query', ''),
+            productId: $productId,
+            searchMode: old('search_mode', 'literal'),
+            viewName: $view,
+            includeTrace: $includeTrace,
+        ));
+    }
+
+    /**
+     * @return \Illuminate\View\View
+     */
+    private function runSearch(
+        Request $request,
+        string $view,
+        bool $includeTrace,
+        bool $preferExercisesNamespace = false,
+    ) {
+        $validated = $request->validate([
+            'query' => [
+                'required',
+                'string',
+                'max:8192',
+                function (string $attribute, mixed $value, \Closure $fail): void {
+                    if (! is_string($value) || trim($value) === '') {
+                        $fail(__('The query cannot be empty.'));
+                    }
+                },
+            ],
+            'namespace' => 'nullable|string|max:128',
+            'search_mode' => 'nullable|string|in:classic,literal',
+        ]);
+
+        $api = $this->getApiService();
+        [$namespaces, $defaultNamespace, $namespaceLoadNote] = $this->resolveNamespacesMeta($api);
+        if ($preferExercisesNamespace) {
+            $defaultNamespace = $this->preferVisualNamespace($namespaces, $defaultNamespace);
+        }
+        $productId = ProductContext::id();
+
+        $videos = [];
+        $searchResponse = null;
+        $searchError = null;
+        $searchId = null;
+        $selectedNamespace = trim((string) ($validated['namespace'] ?? '')) ?: $defaultNamespace;
+        $searchMode = trim((string) ($validated['search_mode'] ?? 'literal')) ?: 'literal';
+        if (! in_array($searchMode, ['classic', 'literal'], true)) {
+            $searchMode = 'literal';
+        }
+
+        try {
+            $payload = [
+                'query' => trim($validated['query']),
+                'search_mode' => $searchMode,
+            ];
+            if ($includeTrace) {
+                // Ops playground: full pipeline step trace (not used by public WP).
+                $payload['include_trace'] = true;
+            }
+            if ($selectedNamespace !== '') {
+                $payload['namespace'] = $selectedNamespace;
+            }
+            $postType = ProductContext::searchPostType($productId);
+            if ($postType !== null) {
+                $payload['post_type'] = $postType;
+            }
+
+            $searchResponse = $api->semanticSearchVideos($payload);
+            $videos = $searchResponse['videos'] ?? [];
+            $searchId = is_string($searchResponse['search_id'] ?? null)
+                ? $searchResponse['search_id']
+                : null;
+            if (is_string($searchResponse['search_mode'] ?? null) && $searchResponse['search_mode'] !== '') {
+                $searchMode = $searchResponse['search_mode'];
+            }
+        } catch (\Exception $e) {
+            Log::warning('AI semantic search from dashboard failed', [
+                'message' => $e->getMessage(),
+                'product' => $productId,
+                'view' => $view,
+            ]);
+            $searchError = $e->getMessage();
+        }
+
+        return view($view, $this->searchViewData(
+            namespaces: $namespaces,
+            defaultNamespace: $defaultNamespace,
+            namespaceLoadNote: $namespaceLoadNote,
+            selectedNamespace: $selectedNamespace,
+            prefillQuery: trim($validated['query']),
+            productId: $productId,
+            videos: is_array($videos) ? $videos : [],
+            searchResponse: $searchResponse,
+            searchError: $searchError,
+            searchId: $searchId,
+            searchMode: $searchMode,
+            viewName: $view,
+            includeTrace: $includeTrace,
+        ));
+    }
+
+    /**
+     * @param  list<string>  $namespaces
+     */
+    private function preferVisualNamespace(array $namespaces, string $fallback): string
+    {
+        if (in_array(self::VISUAL_PREFERRED_NAMESPACE, $namespaces, true)) {
+            return self::VISUAL_PREFERRED_NAMESPACE;
+        }
+
+        return $fallback;
+    }
+
+    /**
      * @return array<string, mixed>
      */
     private function searchViewData(
@@ -176,13 +233,21 @@ class AiSearchController extends Controller
         ?string $searchError = null,
         ?string $searchId = null,
         string $searchMode = 'literal',
+        string $viewName = 'ai-search.index',
+        bool $includeTrace = true,
     ): array {
-        $searchRoute = $productId === ProductContext::MOW_ROW
-            ? 'mow-row.search.search'
-            : 'ai-search.playground.search';
-        $feedbackRoute = $productId === ProductContext::MOW_ROW
-            ? 'mow-row.search.feedback'
-            : 'ai-search.playground.feedback';
+        $isVisual = $viewName === 'ai-search.visual';
+
+        if ($productId === ProductContext::MOW_ROW) {
+            $searchRoute = 'mow-row.search.search';
+            $feedbackRoute = 'mow-row.search.feedback';
+        } elseif ($isVisual) {
+            $searchRoute = 'ai-search.visual.search';
+            $feedbackRoute = 'ai-search.playground.feedback';
+        } else {
+            $searchRoute = 'ai-search.playground.search';
+            $feedbackRoute = 'ai-search.playground.feedback';
+        }
 
         if (! in_array($searchMode, ['classic', 'literal'], true)) {
             $searchMode = 'literal';
@@ -203,6 +268,8 @@ class AiSearchController extends Controller
             'product' => ProductContext::config($productId),
             'searchFormAction' => route($searchRoute),
             'feedbackUrl' => route($feedbackRoute),
+            'includeTrace' => $includeTrace,
+            'isVisualSearch' => $isVisual,
         ];
     }
 

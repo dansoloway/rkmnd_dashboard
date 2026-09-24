@@ -51,6 +51,8 @@ Route::middleware(['auth', 'restrict.analytics'])->group(function () {
             ->name('embedding-text');
         Route::get('/playground', [AiSearchController::class, 'index'])->name('playground.index');
         Route::post('/playground', [AiSearchController::class, 'search'])->name('playground.search');
+        Route::get('/visual', [AiSearchController::class, 'visualIndex'])->name('visual.index');
+        Route::post('/visual', [AiSearchController::class, 'visualSearch'])->name('visual.search');
         Route::get('/vocabulary', [VocabularyController::class, 'index'])->name('vocabulary.index');
         Route::get('/vocabulary/create', [VocabularyController::class, 'create'])->name('vocabulary.create');
         Route::post('/vocabulary', [VocabularyController::class, 'store'])->name('vocabulary.store');

@@ -29,6 +29,11 @@ return [
                     'active' => ['ai-search.playground.*'],
                 ],
                 [
+                    'label' => 'Visual search',
+                    'route' => 'ai-search.visual.index',
+                    'active' => ['ai-search.visual.*'],
+                ],
+                [
                     'label' => 'Anatomy dictionary',
                     'route' => 'ai-search.vocabulary.index',
                     'active' => ['ai-search.vocabulary.*'],
