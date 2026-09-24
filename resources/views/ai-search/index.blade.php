@@ -270,17 +270,22 @@
                                                 @foreach($segments as $seg)
                                                     @php
                                                         $start = isset($seg['start_seconds']) && is_numeric($seg['start_seconds']) ? (int) $seg['start_seconds'] : null;
-                                                        $end = isset($seg['end_seconds']) && is_numeric($seg['end_seconds']) ? (int) $seg['end_seconds'] : null;
                                                         $fmt = function (?int $s): string {
-                                                            if ($s === null) {
+                                                            if ($s === null || $s < 0) {
                                                                 return '—';
                                                             }
+                                                            $h = intdiv($s, 3600);
+                                                            $m = intdiv($s % 3600, 60);
+                                                            $sec = $s % 60;
+                                                            if ($h > 0) {
+                                                                return sprintf('%d:%02d:%02d', $h, $m, $sec);
+                                                            }
 
-                                                            return gmdate($s >= 3600 ? 'H:i:s' : 'i:s', $s);
+                                                            return sprintf('%d:%02d', $m, $sec);
                                                         };
                                                     @endphp
                                                     <li>
-                                                        {{ $fmt($start) }}–{{ $fmt($end) }}
+                                                        {{ $fmt($start) }}
                                                         · {{ $seg['name'] ?? '(unnamed)' }}
                                                         @if(!empty($seg['exercise_type']))
                                                             <span class="text-emerald-600">({{ $seg['exercise_type'] }})</span>

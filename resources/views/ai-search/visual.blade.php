@@ -275,9 +275,6 @@
                                                     $start = isset($seg['start_seconds']) && is_numeric($seg['start_seconds'])
                                                         ? (int) $seg['start_seconds']
                                                         : null;
-                                                    $end = isset($seg['end_seconds']) && is_numeric($seg['end_seconds'])
-                                                        ? (int) $seg['end_seconds']
-                                                        : null;
                                                     $segType = (string) ($seg['type'] ?? $seg['exercise_type'] ?? '');
                                                     $segName = (string) ($seg['name'] ?? '(unnamed)');
                                                     $isSeekMatch = $seekTo !== null && $start !== null && $start === $seekTo;
@@ -289,8 +286,8 @@
                                                         @click="play(@js($start))"
                                                         @disabled($jwpId === '' || $start === null)
                                                     >
-                                                        <span class="font-mono text-gray-500 shrink-0 w-[4.5rem]">
-                                                            {{ $formatClock($start) }}@if($end !== null)–{{ $formatClock($end) }}@endif
+                                                        <span class="font-mono text-gray-500 shrink-0 whitespace-nowrap">
+                                                            {{ $formatClock($start) }}
                                                         </span>
                                                         <span class="text-gray-800 min-w-0">
                                                             {{ $segName }}
