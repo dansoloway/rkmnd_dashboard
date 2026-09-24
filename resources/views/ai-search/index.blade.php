@@ -248,6 +248,50 @@
                             @if(($meta['run_time'] ?? '') !== '')
                                 <p class="text-xs text-gray-500 mt-1">Runtime: {{ $meta['run_time'] }}</p>
                             @endif
+                            @php
+                                $seekTo = isset($meta['seek_to']) && is_numeric($meta['seek_to']) ? (int) $meta['seek_to'] : null;
+                                $segments = isset($meta['segments']) && is_array($meta['segments']) ? $meta['segments'] : [];
+                            @endphp
+                            @if($seekTo !== null || count($segments) > 0)
+                                <div class="mt-2 text-xs border border-emerald-100 bg-emerald-50 rounded px-3 py-2 space-y-1">
+                                    @if($seekTo !== null)
+                                        <p class="text-emerald-900 font-medium">
+                                            Suggested seek:
+                                            <code class="bg-white/70 px-1 rounded">{{ gmdate($seekTo >= 3600 ? 'H:i:s' : 'i:s', $seekTo) }}</code>
+                                            <span class="text-emerald-700 font-normal">({{ $seekTo }}s)</span>
+                                        </p>
+                                    @endif
+                                    @if(count($segments) > 0)
+                                        <details class="text-emerald-900">
+                                            <summary class="cursor-pointer font-medium select-none">
+                                                Exercise timeline ({{ count($segments) }})
+                                            </summary>
+                                            <ul class="mt-1 max-h-40 overflow-y-auto space-y-0.5 font-mono text-[11px] text-emerald-800">
+                                                @foreach($segments as $seg)
+                                                    @php
+                                                        $start = isset($seg['start_seconds']) && is_numeric($seg['start_seconds']) ? (int) $seg['start_seconds'] : null;
+                                                        $end = isset($seg['end_seconds']) && is_numeric($seg['end_seconds']) ? (int) $seg['end_seconds'] : null;
+                                                        $fmt = function (?int $s): string {
+                                                            if ($s === null) {
+                                                                return '—';
+                                                            }
+
+                                                            return gmdate($s >= 3600 ? 'H:i:s' : 'i:s', $s);
+                                                        };
+                                                    @endphp
+                                                    <li>
+                                                        {{ $fmt($start) }}–{{ $fmt($end) }}
+                                                        · {{ $seg['name'] ?? '(unnamed)' }}
+                                                        @if(!empty($seg['exercise_type']))
+                                                            <span class="text-emerald-600">({{ $seg['exercise_type'] }})</span>
+                                                        @endif
+                                                    </li>
+                                                @endforeach
+                                            </ul>
+                                        </details>
+                                    @endif
+                                </div>
+                            @endif
                             @if(!empty($meta['audio_file']))
                                 <p class="text-xs mt-2">
                                     Audio:

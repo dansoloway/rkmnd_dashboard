@@ -17,7 +17,9 @@ class AiSearchController extends Controller
         'v6_title_tags_long',
         'v6_title_tags_short_long',
         'v6_title_tags_catalog',
+        'v6_title_tags_exercises',
         'mow_row_v6_title_tags',
+        'mow_row_v6_exercises',
     ];
 
     public function index()

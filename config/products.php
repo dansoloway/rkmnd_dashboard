@@ -22,6 +22,7 @@ return [
             'v6_title_tags_short_long',
             'v6_title_tags_catalog',
             'v7',
+            'v6_title_tags_exercises',
         ],
         'catalog_filters' => [
             'post_type' => 'video',
@@ -40,6 +41,7 @@ return [
         'default_namespace' => 'mow_row_v6_title_tags',
         'namespace_allow_list' => [
             'mow_row_v6_title_tags',
+            'mow_row_v6_exercises',
         ],
         'catalog_filters' => [
             'embedding_namespace' => 'mow_row_v6_title_tags',
