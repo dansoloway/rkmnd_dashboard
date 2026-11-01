@@ -20,6 +20,7 @@ class NamespaceStudioController extends Controller
     private const NAMESPACE_META = [
         'v6_title_only' => ['label' => 'Title only', 'keys' => ['title']],
         'v6_title_tags' => ['label' => 'Title + post tags', 'keys' => ['title', 'post_tags']],
+        'v6_title_tags_no_bbb' => ['label' => 'Control (no BBB): title + tags', 'keys' => ['title', 'post_tags']],
         'v6_title_tags_short' => ['label' => 'Title + tags + short description', 'keys' => ['title', 'post_tags', 'details_short_description']],
         'v6_title_tags_long' => ['label' => 'Title + tags + long description', 'keys' => ['title', 'post_tags', 'details_long_description']],
         'v6_title_tags_short_long' => ['label' => 'Title + tags + short + long description', 'keys' => ['title', 'post_tags', 'details_short_description', 'details_long_description']],

@@ -15,6 +15,7 @@ class AiSearchController extends Controller
     private const FALLBACK_NAMESPACES = [
         'v6_title_only',
         'v6_title_tags',
+        'v6_title_tags_no_bbb',
         'v6_title_tags_short',
         'v6_title_tags_long',
         'v6_title_tags_short_long',
